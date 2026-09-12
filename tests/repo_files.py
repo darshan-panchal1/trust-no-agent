@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SOURCE_DIRS = ("app", "evals", "tests")
+SOURCE_DIRS = ("app", "evals", "tests", "trustnoagent")
 MAX_MODULE_LINES = 60
 
 
