@@ -1,0 +1,31 @@
+# Publishes to real PyPI via Trusted Publishing (OIDC) — no stored token, ever: id-token:
+# write gets a short-lived credential from GitHub, which PyPI trusts because this exact
+# owner/repo/workflow/environment was registered as a trusted publisher (pypi.org project
+# settings). workflow_dispatch only, never on push/tag: a PyPI publish is irreversible (a
+# version number can never be reused, even after deletion), so it must not fire automatically
+# the way offline.yml does — same reasoning live.yml uses for real-money API calls.
+name: publish
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+jobs:
+  publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish --trusted-publishing automatic

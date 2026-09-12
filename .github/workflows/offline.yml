@@ -13,6 +13,12 @@ jobs:
   suite:
     name: pytest (offline, no credentials)
     runs-on: ubuntu-latest
+    # Explicit, not the repo default: naming pull-requests: write here means every other
+    # scope (issues, contents-write, etc.) is implicitly none for this job, least-privilege,
+    # rather than however broad Settings -> Actions -> Workflow permissions happens to be set.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 

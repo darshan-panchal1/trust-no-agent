@@ -1,16 +1,16 @@
 # Example usage of ./action.yml, for anyone deciding whether to adopt it — not part of this
 # repo's own required checks.
 #
-# Deliberately `workflow_dispatch`, not `pull_request`: `darshan-panchal1/trust-no-agent@v1`
-# is not a git tag yet, so resolving that reference would fail on every single PR to THIS
-# repository until one is cut — permanently breaking unrelated work for a reason no PR
-# author caused. workflow_dispatch keeps this opt-in, the same reason live.yml uses it.
-# Once a real v1 tag exists, the `gate` job below — unchanged — is what a consumer's own
-# `on: pull_request` workflow looks like.
+# `v1`/`v1.0.0` now exist (711dc26), so this runs on `pull_request` like a real consumer's
+# workflow would. It still resolves the action as `uses: ./` rather than
+# `darshan-panchal1/trust-no-agent@v1`: a PR branch is checked out at its own commit, not at
+# the tag, so `@v1` would silently exercise whatever action.yml the tag happened to freeze
+# instead of the one actually under review in this PR. A consumer outside this repo should
+# use `darshan-panchal1/trust-no-agent@v1`, exactly as the removed comment showed.
 name: example
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 jobs:
   gate:
@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: darshan-panchal1/trust-no-agent@v1
+      - uses: ./
         with:
           judge-model: nvidia/nemotron-3-super-120b-a12b
           generator-model: nvidia/nemotron-3-super-120b-a12b
