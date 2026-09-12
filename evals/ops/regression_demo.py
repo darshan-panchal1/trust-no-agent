@@ -12,7 +12,9 @@ so its numbers are the committed calibration evidence itself. Only the regressed
 calls live, and every entry it writes carries a `regression_demo:` call_kind. Nothing here
 can reach a v1/v2 calibration key.
 
-Run: `uv run python -c "from evals.ops.regression_demo import main; main()"` (needs NVIDIA_API_KEY)
+Run: `uv run python -c "from evals.ops.regression_demo import main; main()"` (needs
+NVIDIA_API_KEY) — or `main(mode="offline")` to replay entirely from the committed
+`regression_demo:*` evidence: no key, no network, same numbers.
 """
 
 from __future__ import annotations
@@ -45,11 +47,14 @@ def gate_means(
     return means
 
 
-def main() -> None:
+def main(mode: Literal["offline", "live"] = "live") -> None:
+    """`mode="offline"` replays the regressed variant from its own committed
+    `regression_demo:*` evidence — no key, no network, matching `build_summary`'s pattern.
+    Real v2 stays offline unconditionally either way; see the module docstring."""
     cases = load_golden()
     real = [real_v2_answer(c.question) for c in cases]  # offline: cannot write, cannot spend
-    regressed = [regressed_answer(c.question, mode="live") for c in cases]
+    regressed = [regressed_answer(c.question, mode=mode) for c in cases]
     real_means = gate_means(cases, real, "", "offline")
-    regressed_means = gate_means(cases, regressed, NAMESPACE, "live")
+    regressed_means = gate_means(cases, regressed, NAMESPACE, mode)
     shown = next(i for i, c in enumerate(cases) if c.question == SHOWCASE_QUESTION)
     print_report(cases, real, regressed, real_means, regressed_means, shown)
