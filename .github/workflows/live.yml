@@ -1,0 +1,79 @@
+# Article VI: the only job that holds credentials, and the only way evidence is refreshed.
+# Manually dispatched — never on push, never on pull_request — so it can neither gate a
+# merge nor fire by accident. Its product is a pull request carrying the evidence diff,
+# because Article III requires a cache refresh to be reviewed as a change to the evidence.
+name: live
+
+on:
+  workflow_dispatch:
+    inputs:
+      usd_ceiling:
+        description: "Abort before spending more than this (Article VIII)"
+        required: true
+        default: "5.00"
+
+jobs:
+  record:
+    name: record evidence (billed)
+    runs-on: ubuntu-latest
+    # A protected environment keeps the keys behind a reviewer, so dispatching this
+    # workflow is a decision someone approves rather than a button anyone can hit.
+    environment: live-evidence
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install exact pins
+        run: uv sync --frozen
+
+      - name: Install the local embeddings model (Ninth amendment; author-only group)
+        run: uv sync --frozen --group calibration
+
+      # FR-048: the one command that creates or refreshes an entry, and the only place in
+      # this repository where a provider key is ever readable (FR-041). NVIDIA_API_KEY is
+      # the only credential this repo needs on any path since the tenth amendment —
+      # embeddings run locally (ninth amendment) and the judge/generator route through
+      # NVIDIA NIM, no OPENAI_API_KEY required anywhere.
+      #
+      # --allow-unpriced: NIM has no dated price in evals/pricing.yaml (V8.6 — the package
+      # ships an empty price map, and "free inference" is an unquantified marketing claim,
+      # not a $0.00 verified against a primary source). Without this flag `record` refuses
+      # to start at all, because an unpriced call can't be checked against usd_ceiling —
+      # there is nothing to cap it against (evals/ops/record.py, `estimated_usd`/`record`).
+      # This is Article VIII's UNVERIFIED discipline applied deliberately, not an oversight.
+      # Note the real consequence: once this flag is set, `usd_ceiling` stops doing anything
+      # for this run. The first uncached NIM call marks cost.total_usd() UNVERIFIED (None)
+      # for the rest of the run, and `_abort_if_over` treats None as "nothing to check" when
+      # allow_unpriced=True — it never raises again. `usd_ceiling` is decoration until a
+      # dated NIM price exists; the real spending control right now is the workflow's manual
+      # `workflow_dispatch` gate and the `live-evidence` protected environment above.
+      # Revisit — and drop this flag — if a dated NIM price is ever pinned.
+      - name: Record
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        run: >
+          uv run python -m evals.cli record
+          --usd-ceiling "${{ inputs.usd_ceiling }}"
+          --allow-unpriced
+
+      - name: Open a pull request with the evidence diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="evidence/$(date -u +%Y%m%dT%H%M%SZ)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add evals/.judge_cache
+          git commit -m "Refresh judge evidence" || { echo "no evidence changed"; exit 0; }
+          git push origin "$branch"
+          gh pr create --fill --base main --head "$branch" \
+            --title "Refresh judge evidence" \
+            --body "Produced by the live workflow. One JSON per key — review the diff as a
+          change to the evidence, because every threshold downstream is calibrated on it."

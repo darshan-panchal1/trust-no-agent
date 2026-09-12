@@ -1,0 +1,59 @@
+# Article VI / FR-046: the required job on every PR. It runs the whole suite against
+# committed evidence with NO credentials in its environment at all — not an empty string,
+# absent. Nothing in this file may add a provider key, and tests/test_ci_config.py asserts
+# that mechanically, because a secret added here would be invisible in review otherwise.
+name: offline
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  suite:
+    name: pytest (offline, no credentials)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # --frozen: the lockfile is the pin (Article IX). Resolution drift fails the job
+      # rather than silently installing something the evidence was never recorded against.
+      - name: Install exact pins
+        run: uv sync --frozen
+
+      - name: Lint and types
+        run: |
+          uv run ruff check .
+          uv run mypy .
+
+      # Article 0's Prime Contract, as a job: green offline, no key, $0.00. The cost table
+      # prints unconditionally at the end (Article VIII), so the spend is on screen in CI.
+      - name: Run the suite
+        run: uv run pytest | tee pytest-output.txt
+
+      - name: Post the run to the pull request
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '## Offline suite'
+            echo
+            echo '```'
+            tail -n 25 pytest-output.txt
+            echo '```'
+            echo
+            echo '### Evidence coverage'
+            echo '```'
+            uv run python -m evals.cli record --dry-run
+            echo '```'
+          } > comment.md
+          gh pr comment "${{ github.event.number }}" --body-file comment.md
+          # FR-046 also asks for the score matrix here. It is rendered by
+          # `evals/cli.py report`, which needs a run summary built from recorded evidence —
+          # blocked on T3.8b. Add the `report` invocation to this step when that lands;
+          # this comment stays until it does, rather than the requirement going quiet.
