@@ -1,9 +1,21 @@
 [project]
 name = "trust-no-agent"
-version = "0.1.0"
+version = "1.0.0"
 description = "An LLM-agent evaluation harness that proves an agent is broken when its outputs look fine."
 readme = "README.md"
 requires-python = "==3.12.*"
+license = "MIT"
+authors = [{ name = "darshan-panchal1" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: OS Independent",
+]
 
 # Exact pins only. No ranges anywhere in this file — see docs/api-notes.md.
 dependencies = [
@@ -42,14 +54,71 @@ dependencies = [
     "openai==2.54.0",
 ]
 
-# NO [project.scripts] AND NO [build-system], deliberately — Article 0 outranks T4.5's
+[project.urls]
+Homepage = "https://github.com/darshan-panchal1/trust-no-agent"
+Repository = "https://github.com/darshan-panchal1/trust-no-agent"
+Issues = "https://github.com/darshan-panchal1/trust-no-agent/issues"
+
+# Points at the existing `evals/cli.py` Typer app, unchanged — Article I.a's by-name
+# carve-out ("exactly one module ... may import argparse/click") still holds: this is a
+# pyproject.toml declaration referencing already-governed code, not a new typer importer.
+[project.scripts]
+trust-no-agent = "evals.cli:app"
+
+# ORIGINAL 2026-09-07 DECISION (kept, not deleted — see SUPERSEDED note): NO
+# [project.scripts] AND NO [build-system], deliberately — Article 0 outranks T4.5's
 # "[project.scripts] entry point" wording. Installing a console script requires a build
 # backend, and `uv sync --offline` with `requires = ["hatchling"]` fails on a cold clone:
 #   "Because editables was not found in the cache ... your requirements are unsatisfiable"
 # (verified 2026-09-07 by adding hatchling and running `uv sync --offline`). That breaks
 # the Prime Contract's offline clone-to-green promise to buy a shorter command name.
-# The operator entry point is therefore `uv run python -m evals.cli`, which needs no build
-# step; Article I's enforcement carves out `evals/cli.py` by name for exactly this.
+# SUPERSEDED 2026-09-12, and the reason the block above is kept: the conclusion was right for
+# the configuration tested, and wrong as a general claim. A `[build-system]` alone does flip
+# this project from virtual to a package, forcing an editable self-install (hatchling +
+# editables) that a cold offline clone cannot satisfy. `[tool.uv] package = false` below is
+# what makes the two coexist: uv keeps the project virtual, so `uv sync` never builds it.
+#
+# RE-VERIFIED 2026-09-12 against uv 0.11.23 / hatchling 1.32.0, by cold clone, not by argument:
+#   - fresh `git clone` into a temp dir, with an ISOLATED UV_CACHE_DIR (`editables` confirmed
+#     absent from it — the exact package named in the 2026-09-07 failure above),
+#   - `uv sync --frozen --offline` -> exit 0, no build attempted, no editable install,
+#   - the project stays OUT of `.venv/.../site-packages` (still virtual),
+#   - `uv run --frozen --offline pytest` -> 125 passed, 2 skipped, 3 xfailed, $0.00, 100% cached.
+#   - `uv lock --check` -> exit 0, and uv.lock still records `source = { virtual = "." }`.
+# Article 0's Prime Contract therefore holds with a build backend declared, and NO article is
+# amended. Exact pin per Article IX — no ranges.
+#
+# [project.scripts], ADDED 2026-09-12 for the v1.0.0 release, re-verified the same way: built
+# the wheel, `pip install`ed it into a clean venv, ran the installed `trust-no-agent` console
+# script (not `python -m evals.cli`) from `/tmp` with no repo on `sys.path` — `--help` and
+# `gate <model> <model>` both worked, exit 0 against the committed cache. `uv sync --offline`
+# unaffected, since entry points are a wheel-build concern, not a `uv sync` one.
+#
+# `uv build` produces both the sdist and, as of the `[tool.hatch.build.targets.wheel]` block
+# below, the wheel — verified 2026-09-12 to contain all 1120 `evals/.judge_cache/` entries,
+# byte-count-matched against the repo, not assumed. Hatchling needed only explicit `packages`:
+# no directory here matches the distribution name, so its own auto-detection finds nothing.
+# CORRECTED, same day: a `force-include` was tried first for the dot-directory cache, on the
+# assumption hatchling's `packages` walker skips dot-directories by default. It does not —
+# `uv build` failed with "A second file is being added... at the same path", because
+# `packages` already carried every `.judge_cache` entry, and the redundant force-include
+# collided with it. The disproven assumption is left here, not silently dropped, per this
+# repo's own rule about a corrected mechanism (see Article III's amendment history for the
+# same discipline). `tests/`/`conftest.py` are deliberately NOT yet in the wheel:
+# `evals.ops.demo_report` imports `tests.vibes_checks` and three behavior tests do
+# `from conftest import assert_test`, but `EvalSuite.run/gate/report` does not reach either,
+# so shipping them is deferred rather than assumed necessary.
+
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# Explicit selection, required: no directory here matches the normalized distribution name
+# `trust_no_agent`, so hatchling's own package auto-detection finds nothing (verified
+# 2026-09-12). `evals`/`app` stay the real internal layout per the facade decision (see the
+# packaging plan); `trustnoagent` is the public surface built on top of them.
+packages = ["app", "evals", "trustnoagent"]
 
 [dependency-groups]
 dev = [
@@ -79,6 +148,13 @@ calibration = [
 # default. Stated here explicitly anyway, so the guarantee rests on a pinned setting a
 # reader can see, not on trusting uv's unwritten default to hold across versions.
 default-groups = ["dev"]
+# Load-bearing for Article 0, verified 2026-09-12 (see the [build-system] block above for the
+# cold-clone method and results). Declaring a build backend would otherwise flip this project
+# from virtual to a package, forcing an editable self-install — hatchling + editables — that a
+# cold offline clone cannot satisfy. `package = false` keeps `uv sync` from ever building the
+# project, so the backend exists for `uv build` alone. Removing this line re-breaks the Prime
+# Contract silently: the suite stays green on any warm machine and fails only a cold clone.
+package = false
 
 [tool.ruff]
 line-length = 100
