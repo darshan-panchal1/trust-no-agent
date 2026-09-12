@@ -1,0 +1,150 @@
+[project]
+name = "trust-no-agent"
+version = "0.1.0"
+description = "An LLM-agent evaluation harness that proves an agent is broken when its outputs look fine."
+readme = "README.md"
+requires-python = "==3.12.*"
+
+# Exact pins only. No ranges anywhere in this file — see docs/api-notes.md.
+dependencies = [
+    "ragas==0.4.3",
+    "deepeval==4.2.0",
+    # PIN WORKAROUND — Article IX.a. Tested 2026-09-03 against ragas==0.4.3.
+    #   Failure: `import ragas` raises ModuleNotFoundError. ragas/llms/base.py:12 does an
+    #     unconditional top-level `from langchain_community.chat_models.vertexai import
+    #     ChatVertexAI`; that module was removed in langchain-community 0.4.2.
+    #   Bisection over every release >= 0.3.31: 0.3.31 OK, 0.4.1 OK, 0.4.2 FAILS.
+    #     (There is no stable 0.4.0.) 0.4.1 is the highest working version as of this date.
+    #   Natural resolution picks 0.4.2, so without this pin a clean clone cannot import ragas.
+    #   Upstream regression — revisit on any ragas or langchain-community bump, re-run the
+    #     bisection, and raise the pin as soon as a higher version imports cleanly. Note
+    #     langchain-community is being sunset upstream, so the durable fix is likely a ragas
+    #     release that drops the import entirely. See docs/api-notes.md, Trap 2.
+    "langchain-community==0.4.1",
+    # SUPERSEDED as a direct import (ninth amendment): evals/embeddings.py moved off
+    # OpenAIEmbeddings to a local sentence-transformers model and no longer imports this
+    # package. Pinned explicitly anyway — `ragas` itself declares it as a dependency
+    # (`importlib.metadata.requires("ragas")` lists it), so it lands in `.venv` regardless;
+    # an explicit exact pin here is still Article IX's discipline, not a shrug.
+    "langchain-openai==1.6.0",
+    "pyyaml==6.0.3",
+    "pydantic==2.13.5",
+    # Slice 4, operator surface only. Both were already resolved into uv.lock as transitive
+    # dependencies of deepeval; pinning them here makes the two we actually import ours.
+    # typer is imported by exactly one module, evals/cli.py (Article I.a).
+    "typer==0.27.2",
+    "jinja2==3.1.6",
+    # Tenth amendment / Article IX: previously a transitive dependency (via langchain-openai)
+    # only, never imported directly. `evals/ragas_llm.py`, `evals/judge/cached.py` and
+    # `app/generate.py` now construct `openai.OpenAI(base_url=NIM_BASE_URL, ...)` directly
+    # against NVIDIA NIM, so it is pinned explicitly here — a package this repo imports is
+    # never left to another project's dependency choice (Article IX's new direct-import rule).
+    "openai==2.54.0",
+]
+
+# NO [project.scripts] AND NO [build-system], deliberately — Article 0 outranks T4.5's
+# "[project.scripts] entry point" wording. Installing a console script requires a build
+# backend, and `uv sync --offline` with `requires = ["hatchling"]` fails on a cold clone:
+#   "Because editables was not found in the cache ... your requirements are unsatisfiable"
+# (verified 2026-09-07 by adding hatchling and running `uv sync --offline`). That breaks
+# the Prime Contract's offline clone-to-green promise to buy a shorter command name.
+# The operator entry point is therefore `uv run python -m evals.cli`, which needs no build
+# step; Article I's enforcement carves out `evals/cli.py` by name for exactly this.
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "pytest-socket==0.8.1",
+    # Required by Article III.a: `env` is NOT a pytest core ini key. Without this plugin the
+    # env block below is silently ignored and the telemetry opt-out never takes effect.
+    "pytest-env==1.7.0",
+    "ruff==0.16.5",
+    "mypy==2.3.1",
+    "types-pyyaml==6.0.12.20260815",
+]
+# Ninth amendment / Article IX. Author-only, for `evals/cli.py calibrate`'s local embeddings
+# model (evals/embeddings.py) — never touched by the viewer's offline suite. `uv add
+# sentence-transformers` measured (docs/api-notes.md, V7.1): resolves to torch==2.14.0 and
+# transformers==5.16.1 with zero version changes to any already-pinned package, but pulls a
+# 121MB download that unpacks to ~650MB, roughly doubling `.venv`. That cost must never reach
+# a viewer's `uv sync`, so it lives here, named apart from `dev`, and `[tool.uv]` below keeps
+# it out of the default install. Install with `uv sync --group calibration`.
+calibration = [
+    "sentence-transformers==6.0.1",
+]
+
+[tool.uv]
+# Article IX / Ninth amendment: `uv sync` installs `dev` by default even with no
+# `default-groups` key at all — `--no-dev` exists precisely because that's the built-in
+# default. Stated here explicitly anyway, so the guarantee rests on a pinned setting a
+# reader can see, not on trusting uv's unwritten default to hold across versions.
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Article VII calls the 100-character limit machine-enforced. It was not: E501 is absent
+# from ruff's default rule set, so `line-length` above only fed `ruff format`, which this
+# repo never runs. Four lines had drifted over the cap unnoticed, two of them since Slice 1.
+# `extend-select` (not `select`) keeps ruff's defaults and adds the one missing rule.
+extend-select = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+# Article I: pytest is the only entry point. Article VI: offline by default.
+# FR-049: `-m 'not live'` makes excluding live tests a property of the default config, not
+# something a viewer has to know to ask for. A cold clone with no credentials never tries
+# one. Supplying `-m live` overrides this (last -m wins) and hands over to FR-047's second
+# switch, EVAL_LIVE=1, enforced in conftest.py's pytest_collection_modifyitems.
+# `--disable-socket` is Article VI / FR-035: the offline guarantee is enforced at the socket
+# layer for the WHOLE default run, not just in the tests that remembered to ask for it. A
+# forgotten live call fails loudly here instead of quietly costing money. Live-marked tests,
+# when they exist, must opt back in with pytest-socket's `socket_enabled` fixture.
+#
+# `--allow-unix-socket` is required, not cosmetic: asyncio's event loop builds its internal
+# self-pipe from `socket.socketpair()` (AF_UNIX), so a blanket block breaks any test that
+# touches an event loop — `test_harness_integrity.py`'s run_async=True reproduction died
+# with `'_UnixSelectorEventLoop' object has no attribute '_ssock'`. AF_UNIX is local IPC and
+# carries no network egress, so allowing it costs nothing the guarantee depends on.
+addopts = "-q --strict-markers -m 'not live' --disable-socket --allow-unix-socket"
+pythonpath = ["."]
+markers = [
+    "ragas: component-level RAG metrics (Ragas)",
+    "deepeval: assertion gates and trajectory metrics (DeepEval)",
+    "live: opt-in, performs real judge calls and spends money",
+]
+# Article III.a — set here, NOT in conftest.py. Both DeepEval and ragas read their opt-out
+# vars at import time (ragas: do_not_track() is @lru_cache'd on first call), and conftest may
+# execute after that import, which yields a setting that looks correct and does nothing.
+# Requires the pytest-env plugin (dev group). A test asserts each actually took effect.
+env = [
+    "DEEPEVAL_TELEMETRY_OPT_OUT=YES",
+    # ragas' llm_factory() unconditionally calls track(), POSTing to
+    # t.explodinggradients.com (docs/api-notes.md, Verification round 3, V3.1).
+    "RAGAS_DO_NOT_TRACK=true",
+    # deepeval/__init__.py calls autoload_dotenv() unconditionally at import time, merging
+    # .env/.env.local from the CWD into os.environ for any key not already set — including a
+    # real NVIDIA_API_KEY sitting in this repo's own .env. Undetectable by inspecting this
+    # repo's code; only found by reading deepeval's own source (docs/api-notes.md, Trap 28).
+    # deepeval's own docstring recommends exactly this flag for pytest/CI.
+    "DEEPEVAL_DISABLE_DOTENV=1",
+    # Article III (Eighth amendment): JUDGE_MODEL/GENERATOR_MODEL are required, never
+    # defaulted in code — committed here so a cold clone still needs no configuration.
+    # CORRECTED post-tenth-amendment: the original choices here (nvidia/nemotron-3-ultra-
+    # 550b-a55b and meta/llama-3.2-1b-instruct) were checked against NVIDIA's hosted API
+    # reference page, not a live call — that page was stale. A live credentialed sweep found
+    # meta/llama-3.2-1b-instruct retired (HTTP 410, "end of life 2026-08-26") and most of the
+    # public catalog returning HTTP 404 "not found for account" — this account's entitlement
+    # is far narrower than the catalog listing implies. Both variables now point at the one
+    # model confirmed, by direct testing, to actually respond on this account:
+    # nvidia/nemotron-3-super-120b-a12b. Doesn't match ragas' `is_reasoning_model()`
+    # o-series/gpt-5+ pattern, so InstructorLLM's openai-provider param mapping leaves it
+    # untouched. Still no dated NIM price to make the choice anything but arbitrary (§V8.6).
+    "JUDGE_MODEL=nvidia/nemotron-3-super-120b-a12b",
+    "GENERATOR_MODEL=nvidia/nemotron-3-super-120b-a12b",
+]

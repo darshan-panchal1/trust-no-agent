@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.claude/
+
+# Generated reports are derived artifacts — regenerate with `evals.cli report`.
+# The evidence store (evals/.judge_cache/) is NOT ignored: Article III requires it committed.
+evals/reports/
+
+# Never committed: real credentials and ad hoc scratch scripts. Added 2026-09-09 after both
+# were found sitting untracked at the repo root — a real key belongs nowhere a `git add .`
+# can reach it.
+.env
+test.py
