@@ -1,0 +1,1 @@
+{"call_kind":"generate:regression_demo:v2_regressed","response":"No. When you purchase a SaaS tool from an IT‑maintained approved vendor, the compliance check outlined in `vendor‑approval.md` is skipped. Only purchases from vendors **not** on the approved list trigger the full intake and compliance review.","input_tokens":787,"output_tokens":216,"usd":null}

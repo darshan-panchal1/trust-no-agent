@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context does not specify the actual per diem rate amount; it only refers to an external policy document for the rate, so it is not useful for arriving at the specific answer of $65 USD per day.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:refusalcorrectness","response":"{\n  \"reason\": \"The actual output provided the correct answer (3 business days) matching the expected output, and did not refuse or deflect, so the refuse/answer decision aligns.\",\n  \"score\": 10\n}","input_tokens":404,"output_tokens":218,"usd":null}

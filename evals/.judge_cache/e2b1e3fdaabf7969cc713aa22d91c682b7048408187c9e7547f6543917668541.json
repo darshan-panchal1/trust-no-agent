@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:refusalcorrectness","response":"{\n  \"reason\": \"The expected output indicated an answerable question requesting the annual wellness reimbursement amount. The actual output provided the correct amount ($300) without refusing, thus matching the expected answer/refusal decision.\",\n  \"score\": 10\n}","input_tokens":388,"output_tokens":293,"usd":null}

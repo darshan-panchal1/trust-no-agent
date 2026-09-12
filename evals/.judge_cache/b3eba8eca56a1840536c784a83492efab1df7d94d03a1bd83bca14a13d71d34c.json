@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:regression_demo:refusalcorrectness","response":"{\n  \"reason\": \"The question was answerable and the actual output provided the correct PTO accrual of 15 days per year, matching the expected output without refusing or deflecting.\",\n  \"score\": 10\n}","input_tokens":420,"output_tokens":346,"usd":null}

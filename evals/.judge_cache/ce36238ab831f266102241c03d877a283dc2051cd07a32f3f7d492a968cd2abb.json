@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The provided context does not mention any wellness reimbursement amount or related details about annual reimbursement, so it does not contribute to deriving the answer '$300 per year.'\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

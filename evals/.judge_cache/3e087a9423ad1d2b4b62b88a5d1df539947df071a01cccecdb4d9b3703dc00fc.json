@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context provided is about sick leave policy and contains no information regarding password length or password managers, thus it was not useful for deriving the answer.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

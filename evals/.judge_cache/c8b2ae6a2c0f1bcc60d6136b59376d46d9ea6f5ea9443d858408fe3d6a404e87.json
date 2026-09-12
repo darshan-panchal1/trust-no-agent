@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:refusalcorrectness","response":"{\n  \"reason\": \"The actual output provided an answer rather than refusing, which aligns with the expected output's indication that the question is answerable.\",\n  \"score\": 10\n}","input_tokens":377,"output_tokens":379,"usd":null}

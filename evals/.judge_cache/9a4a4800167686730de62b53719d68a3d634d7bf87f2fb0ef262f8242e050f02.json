@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The provided context does not mention a company car program, which supports the answer that the information is not covered in the provided policies.\\\",\\\"verdict\\\":1}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

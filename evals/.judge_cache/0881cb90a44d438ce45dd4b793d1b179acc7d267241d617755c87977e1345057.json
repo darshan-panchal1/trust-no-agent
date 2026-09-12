@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:refusalcorrectness","response":"{\n  \"reason\": \"Expected output called for a refusal stating the information is unavailable, but actual output provided an answer based on general knowledge and speculation instead of declining to answer.\",\n  \"score\": 0\n}","input_tokens":553,"output_tokens":353,"usd":null}

@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck4:context_recall","response":"{\"__model_dump_json__\": \"{\\\"classifications\\\":[{\\\"statement\\\":\\\"$65 USD per day.\\\",\\\"reason\\\":\\\"The exact statement appears in the v2 section of the context.\\\",\\\"attributed\\\":1}]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

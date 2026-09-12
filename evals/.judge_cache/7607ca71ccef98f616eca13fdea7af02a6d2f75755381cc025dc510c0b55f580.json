@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:regression_demo:refusal_recheck:refusalcorrectness","response":"{\n  \"reason\": \"The actual output provided an answer matching the expected answer (up to 3 days per week) without refusing, correctly fulfilling the answerable expectation.\",\n  \"score\": 10\n}","input_tokens":398,"output_tokens":264,"usd":null}

@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context does not contain any information about the required number of business days for registering itineraries with Security, so it was not useful in arriving at the answer.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

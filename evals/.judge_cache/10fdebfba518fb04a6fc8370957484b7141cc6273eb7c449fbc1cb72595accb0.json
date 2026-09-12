@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The provided context explicitly states that Meridian Logistics reimburses employee travel meals at a flat per diem of $65 USD per day, which directly answers the question about the per diem amount.\\\",\\\"verdict\\\":1}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

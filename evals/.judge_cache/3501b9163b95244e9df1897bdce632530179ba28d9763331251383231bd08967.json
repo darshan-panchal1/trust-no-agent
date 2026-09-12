@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:context_recall","response":"{\"__model_dump_json__\": \"{\\\"classifications\\\":[{\\\"statement\\\":\\\"$500.\\\",\\\"reason\\\":\\\"The context states that eligible remote employees receive a one-time $500 home office setup stipend.\\\",\\\"attributed\\\":1}]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

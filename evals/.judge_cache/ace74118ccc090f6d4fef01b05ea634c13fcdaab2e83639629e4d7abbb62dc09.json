@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Employees can work remotely up to three days per week without needing prior approval.\\\",\\\"Fully remote arrangements beyond three days per week require Director\\u2011level sign\\u2011off.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

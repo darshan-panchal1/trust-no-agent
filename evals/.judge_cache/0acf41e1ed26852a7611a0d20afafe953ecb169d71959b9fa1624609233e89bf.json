@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_recall","response":"{\"__model_dump_json__\": \"{\\\"classifications\\\":[{\\\"statement\\\":\\\"$65/day, per the current policy.\\\",\\\"reason\\\":\\\"The context specifies a per diem of $45 USD per day, not $65/day.\\\",\\\"attributed\\\":0}]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

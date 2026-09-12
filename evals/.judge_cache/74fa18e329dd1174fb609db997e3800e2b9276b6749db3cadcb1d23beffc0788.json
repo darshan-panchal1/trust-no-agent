@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context discusses travel safety policy, which is unrelated to the question about medical recovery leave and parental leave, so it did not contribute to arriving at the answer.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

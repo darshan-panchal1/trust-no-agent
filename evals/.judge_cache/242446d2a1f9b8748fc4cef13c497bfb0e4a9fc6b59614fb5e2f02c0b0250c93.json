@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:regression_demo:refusal_recheck4:refusalcorrectness","response":"{\n  \"reason\": \"The expected output indicated an answer was required (providing the amount), and the actual output gave an answer without refusing or deflecting, so the refuse/answer decision aligns.\",\n  \"score\": 10\n}","input_tokens":388,"output_tokens":326,"usd":null}

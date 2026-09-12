@@ -1,0 +1,1 @@
+{"call_kind":"ragas:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Only direct manager sign-off is required for a domestic trip under $2,000.\\\",\\\"The per diem rate for meals is $65 USD per day.\\\",\\\"The per diem rate for meals is the current rate in the superseded expenses-v2 policy.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

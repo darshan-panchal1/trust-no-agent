@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck2:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"The one-time home office stipend is $500\\u3010home-office-stipend.md\\u3011.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

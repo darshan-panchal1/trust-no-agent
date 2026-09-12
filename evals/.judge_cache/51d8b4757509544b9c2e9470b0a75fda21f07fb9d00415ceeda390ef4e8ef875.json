@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context does not mention the $2,000 domestic threshold for approval or the specific per diem rate of $65/day; therefore it does not provide the information needed to answer the question.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

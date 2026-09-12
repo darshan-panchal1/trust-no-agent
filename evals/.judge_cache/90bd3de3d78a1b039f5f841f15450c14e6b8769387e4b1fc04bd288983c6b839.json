@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck3:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[{\\\"statement\\\":\\\"Meridian's policy for a lost employee badge requires reporting the loss to Facilities immediately.\\\",\\\"reason\\\":\\\"The context states: \\\",\\\"verdict\\\":1}]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:refusalcorrectness","response":"{\n  \"reason\": \"The actual output provided the correct annual wellness reimbursement amount ($300) without refusing or deflecting, which matches the expected answer of '$300 per year.'\",\n  \"score\": 10\n}","input_tokens":396,"output_tokens":250,"usd":null}

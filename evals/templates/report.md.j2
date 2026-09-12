@@ -1,0 +1,33 @@
+{# FR-042: Markdown rendering. Reads the same RunSummary as report.html.j2. #}
+# Eval report — {{ summary.generated_at.strftime('%Y-%m-%d %H:%M:%S') }}
+
+## Score matrix
+
+| metric | v1_naive | v2_fixed | delta | threshold | margin | separates |
+|---|---|---|---|---|---|---|
+{% for row in summary.metrics %}
+| {{ row.metric }} | {{ '%.3f'|format(row.v1_mean) }} | {{ '%.3f'|format(row.v2_mean) }} | {{ '%+.3f'|format(row.delta) }} | {{ '%.3f'|format(row.threshold) if row.threshold is not none else '—' }} | {{ '%+.3f'|format(row.margin) if row.margin is not none else '—' }} | {{ 'yes' if row.separates else ('n/a' if row.separates is none else 'NO') }} |
+{% endfor %}
+
+## Five worst regressions
+
+{% if not summary.worst_regressions %}
+_None recorded._
+{% endif %}
+{% for item in summary.worst_regressions %}
+### {{ loop.index }}. {{ item.metric }} — {{ item.variant }} — scored {{ '%.3f'|format(item.score) }}
+
+**Question:** {{ item.question }}
+
+> {{ item.answer }}
+
+{% endfor %}
+
+## Cost
+
+| call_kind | calls | cached | tok_in | tok_out | USD |
+|---|---|---|---|---|---|
+{% for row in summary.costs %}
+| {{ row.call_kind }} | {{ row.calls }} | {{ row.cached }} | {{ '{:,}'.format(row.input_tokens) }} | {{ '{:,}'.format(row.output_tokens) }} | ${{ '%.2f'|format(row.usd) }} |
+{% endfor %}
+| **TOTAL** | {{ summary.costs|sum(attribute='calls') }} | {{ summary.costs|sum(attribute='cached') }} | {{ '{:,}'.format(summary.costs|sum(attribute='input_tokens')) }} | {{ '{:,}'.format(summary.costs|sum(attribute='output_tokens')) }} | ${{ '%.2f'|format(summary.costs|sum(attribute='usd')) }} |

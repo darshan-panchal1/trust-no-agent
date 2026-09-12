@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:regression_demo:refusal_recheck2:refusalcorrectness","response":"{\n  \"reason\": \"The actual output correctly answers the question with the stipend amount, matching the expected output's answer and not refusing, thus aligning with the evaluation criteria.\",\n  \"score\": 10\n}","input_tokens":394,"output_tokens":172,"usd":null}

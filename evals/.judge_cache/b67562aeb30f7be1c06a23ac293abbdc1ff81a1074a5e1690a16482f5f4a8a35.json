@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context does not specify the stipend amount; it only mentions that remote employees may qualify for a stipend described in another file (home-office-stipend.md), but the actual amount is not provided.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

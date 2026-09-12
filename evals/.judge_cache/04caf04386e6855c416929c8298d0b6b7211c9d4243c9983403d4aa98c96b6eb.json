@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context specifies a flat per diem rate of $45 USD per day for domestic business trips, which contradicts the given answer of $65/day. Therefore, the context was not useful in arriving at the answer.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

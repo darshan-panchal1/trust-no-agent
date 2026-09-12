@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"The one-time home office stipend for eligible remote employees is $500.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

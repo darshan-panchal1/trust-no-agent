@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck4:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"The speaker expresses apology.\\\",\\\"The provided context does not contain information about the number of paid holidays Meridian observes each year.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

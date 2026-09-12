@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck4:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Full-time employees accrue 15 PTO days per year.\\\",\\\"The accrual occurs during the first two years of employment.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

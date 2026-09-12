@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context directly states that full-time employees accrue 15 PTO days per year during their first two years, which matches the answer.\\\",\\\"verdict\\\":1}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

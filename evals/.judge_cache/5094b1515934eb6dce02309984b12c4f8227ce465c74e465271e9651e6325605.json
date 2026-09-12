@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The provided context discusses sick leave and return-to-work policies but does not mention the number of weeks of paid parental leave for the primary caregiver, so it does not support the answer of 12 weeks.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

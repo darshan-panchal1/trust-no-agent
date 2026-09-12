@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:regression_demo:refusal_recheck3:refusalcorrectness","response":"{\n  \"reason\": \"The actual output correctly declines to answer stating the information is unavailable, matching the expected output's refusal for an out-of-scope question.\",\n  \"score\": 10\n}","input_tokens":403,"output_tokens":320,"usd":null}

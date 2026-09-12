@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck2:context_recall","response":"{\"__model_dump_json__\": \"{\\\"classifications\\\":[{\\\"statement\\\":\\\"At least 16 characters.\\\",\\\"reason\\\":\\\"The context states that a password manager-generated password must be at least 16 characters.\\\",\\\"attributed\\\":1}]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

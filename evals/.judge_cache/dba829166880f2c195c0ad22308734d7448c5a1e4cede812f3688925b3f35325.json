@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck3:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Employees may work remotely up to 3\\u202fdays per week without prior approval\\u3010remote-work-policy.md\\u3011.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

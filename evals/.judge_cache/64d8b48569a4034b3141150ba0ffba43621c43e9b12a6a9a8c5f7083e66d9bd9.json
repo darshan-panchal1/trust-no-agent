@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_recall","response":"{\"__model_dump_json__\": \"{\\\"classifications\\\":[{\\\"statement\\\":\\\"$65/day.\\\",\\\"reason\\\":\\\"The context does not specify a per diem amount; it only mentions the heading 'Per Diem Rates' without stating the rate.\\\",\\\"attributed\\\":0}]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context includes information about reporting a lost badge to Facilities, issuing a temporary badge same-day, and implies deactivation of the lost badge, which matches the answer.\\\",\\\"verdict\\\":1}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

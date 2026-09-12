@@ -1,0 +1,1 @@
+{"call_kind":"ragas:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Purchasing a new SaaS tool from the approved vendor list does not require the standard compliance check.\\\",\\\"The standard compliance check is required for other vendors\\u3010software-licensing.md\\u3011.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

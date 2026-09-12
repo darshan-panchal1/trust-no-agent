@@ -1,0 +1,62 @@
+{# FR-042: HTML rendering. Reads the same RunSummary as report.md.j2, so the two cannot
+   disagree about a number. Autoescaped — answer text is model output, not trusted markup. #}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Eval report — {{ summary.generated_at.strftime('%Y-%m-%d %H:%M:%S') }}</title>
+<style>
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 2rem auto;
+         max-width: 60rem; line-height: 1.5; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 2rem; }
+  th, td { border: 1px solid #ccc; padding: 0.35rem 0.6rem; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  .no { color: #b00; font-weight: bold; }
+  blockquote { border-left: 3px solid #ccc; margin: 0.5rem 0; padding: 0.25rem 1rem;
+               color: #333; }
+</style>
+</head>
+<body>
+<h1>Eval report — {{ summary.generated_at.strftime('%Y-%m-%d %H:%M:%S') }}</h1>
+
+<h2>Score matrix</h2>
+<table>
+<tr><th>metric</th><th>v1_naive</th><th>v2_fixed</th><th>delta</th><th>threshold</th>
+    <th>margin</th><th>separates</th></tr>
+{% for row in summary.metrics %}
+<tr><td>{{ row.metric }}</td><td>{{ '%.3f'|format(row.v1_mean) }}</td>
+    <td>{{ '%.3f'|format(row.v2_mean) }}</td><td>{{ '%+.3f'|format(row.delta) }}</td>
+    <td>{{ '%.3f'|format(row.threshold) if row.threshold is not none else '—' }}</td>
+    <td>{{ '%+.3f'|format(row.margin) if row.margin is not none else '—' }}</td>
+    <td{% if row.separates is sameas false %} class="no"{% endif %}>{{ 'yes' if row.separates else ('n/a' if row.separates is none else 'NO') }}</td></tr>
+{% endfor %}
+</table>
+
+<h2>Five worst regressions</h2>
+{% if not summary.worst_regressions %}
+<p><em>None recorded.</em></p>
+{% endif %}
+{% for item in summary.worst_regressions %}
+<h3>{{ loop.index }}. {{ item.metric }} — {{ item.variant }} — scored
+    {{ '%.3f'|format(item.score) }}</h3>
+<p><strong>Question:</strong> {{ item.question }}</p>
+<blockquote>{{ item.answer }}</blockquote>
+{% endfor %}
+
+<h2>Cost</h2>
+<table>
+<tr><th>call_kind</th><th>calls</th><th>cached</th><th>tok_in</th><th>tok_out</th><th>USD</th></tr>
+{% for row in summary.costs %}
+<tr><td>{{ row.call_kind }}</td><td>{{ row.calls }}</td><td>{{ row.cached }}</td>
+    <td>{{ '{:,}'.format(row.input_tokens) }}</td>
+    <td>{{ '{:,}'.format(row.output_tokens) }}</td>
+    <td>${{ '%.2f'|format(row.usd) }}</td></tr>
+{% endfor %}
+<tr><td><strong>TOTAL</strong></td><td>{{ summary.costs|sum(attribute='calls') }}</td>
+    <td>{{ summary.costs|sum(attribute='cached') }}</td>
+    <td>{{ '{:,}'.format(summary.costs|sum(attribute='input_tokens')) }}</td>
+    <td>{{ '{:,}'.format(summary.costs|sum(attribute='output_tokens')) }}</td>
+    <td>${{ '%.2f'|format(summary.costs|sum(attribute='usd')) }}</td></tr>
+</table>
+</body>
+</html>

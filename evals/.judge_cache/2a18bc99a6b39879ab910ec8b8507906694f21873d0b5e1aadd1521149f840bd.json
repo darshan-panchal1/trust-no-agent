@@ -1,0 +1,1 @@
+{"call_kind":"ragas:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"The correct per diem amount to use for expense reports this month is $65 USD per day.\\\",\\\"The reference for the per diem amount is expenses-v2.md.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

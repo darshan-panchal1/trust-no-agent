@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck2:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Security acknowledges an incident report within 1 hour during business hours.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

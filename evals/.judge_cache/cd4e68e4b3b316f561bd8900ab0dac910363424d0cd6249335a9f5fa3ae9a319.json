@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:refusalcorrectness","response":"{\n  \"reason\": \"The actual output correctly refuses to answer because the information is not in the provided context, which aligns with the expected output that states the information is unavailable and should be reported as such.\",\n  \"score\": 10\n}","input_tokens":406,"output_tokens":258,"usd":null}

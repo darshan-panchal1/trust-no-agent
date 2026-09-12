@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:regression_demo:refusal_recheck4:refusalcorrectness","response":"{\n  \"reason\": \"The actual output appropriately declines to answer because the information is not in the provided context, matching the expected output's instruction to state the information is unavailable.\",\n  \"score\": 10\n}","input_tokens":406,"output_tokens":312,"usd":null}

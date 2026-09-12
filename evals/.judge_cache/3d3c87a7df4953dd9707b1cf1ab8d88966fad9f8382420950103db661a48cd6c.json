@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck4:context_recall","response":"{\"__model_dump_json__\": \"{\\\"classifications\\\":[{\\\"statement\\\":\\\"$65/day.\\\",\\\"reason\\\":\\\"The context states that under the current expense policy (v2), the per diem rate is $65 USD per day.\\\",\\\"attributed\\\":1}]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck3:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Minimum password length required when using a password manager is 16 characters.\\\",\\\"Source of the information is password-policy.md.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

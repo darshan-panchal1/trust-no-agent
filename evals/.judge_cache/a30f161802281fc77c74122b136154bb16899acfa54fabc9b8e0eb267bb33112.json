@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context explicitly states that employees receive a $300 annual wellness reimbursement, which directly matches the answer of $300 per year.\\\",\\\"verdict\\\":1}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

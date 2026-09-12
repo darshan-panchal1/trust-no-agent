@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:refusalcorrectness","response":"{\n  \"reason\": \"The expected output indicated an answerable question, and the actual output provided the correct stipend amount without refusing or deflecting, matching the expected response.\",\n  \"score\": 10\n}","input_tokens":378,"output_tokens":268,"usd":null}

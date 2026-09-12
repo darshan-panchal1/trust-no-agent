@@ -1,0 +1,1 @@
+{"call_kind":"ragas:context_precision","response":"{\"__model_dump_json__\": \"{\\\"reason\\\":\\\"The context mentions meals subject to per diem rate but does not specify the actual rate amount, so it does not provide the needed information to determine that the per diem rate is $65/day.\\\",\\\"verdict\\\":0}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

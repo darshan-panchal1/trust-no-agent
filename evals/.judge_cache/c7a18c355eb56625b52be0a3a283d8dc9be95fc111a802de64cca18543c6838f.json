@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck4:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Meridian matches employee retirement contributions dollar-for-dollar up to 4% of base salary.\\\",\\\"The match vests immediately\\u3010retirement-plan.md\\u3011.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

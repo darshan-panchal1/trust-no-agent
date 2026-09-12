@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:regression_demo:refusal_recheck4:refusalcorrectness","response":"{\n  \"reason\": \"The actual output correctly declines to answer, stating that the information is unavailable, which matches the expected output's indication that the question is not covered in the provided policies.\",\n  \"score\": 10\n}","input_tokens":420,"output_tokens":294,"usd":null}

@@ -1,0 +1,1 @@
+{"call_kind":"ragas:regression_demo:recheck3:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"The primary caregiver receives 12 weeks of paid parental leave.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

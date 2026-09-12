@@ -1,0 +1,52 @@
+# Article VIII / FR-034 — this repository's own dated price table.
+#
+# NEVER read prices from deepeval's ANTHROPIC_MODELS_DATA at runtime. Trap 7: it lists
+# claude-sonnet-5 — our judge — at $3/$15 per MTok against a true $2/$10, so every judge
+# cost it reports for this repo is overstated by 50%.
+#
+# Every figure below is an ESTIMATE in USD per million tokens, correct to the best of our
+# knowledge on `checked`. Prices change; a stale number here is better than a stale number
+# buried in Python, but it is still stale. Re-check on any model pin change and move the
+# date. Each row carries where its number came from, so the next person can re-verify
+# rather than re-guess.
+
+checked: 2026-09-07
+
+models:
+  # SUPERSEDED (eighth amendment, 2026-09-08): the judge moved off claude-sonnet-5 to Groq,
+  # then (tenth amendment, 2026-09-09) to NVIDIA NIM. Neither successor got a row — Groq had
+  # no dated price to record (V5.5-V5.6), and NIM has none either (V8.6: an empty bundled
+  # price map, and "free inference" advertised with no rate behind it). Kept as dated
+  # historical evidence rather than deleted, the same treatment this file already gives the
+  # embeddings row below.
+  claude-sonnet-5:
+    input_per_mtok: 2.00
+    output_per_mtok: 10.00
+    source: >-
+      docs/api-notes.md Trap 7 — the published rate, recorded there specifically because
+      deepeval's registry contradicts it with a stale $3/$15.
+
+  # SUPERSEDED (eighth amendment, 2026-09-08): the generator moved off claude-haiku-4-5 to
+  # Groq, then (tenth amendment) to NVIDIA NIM, for the same reason as the row above.
+  claude-haiku-4-5:
+    input_per_mtok: 1.00
+    output_per_mtok: 5.00
+    source: >-
+      deepeval ANTHROPIC_MODELS_DATA, read 2026-09-07 ($1/$5). Trap 7 flags only the
+      sonnet-5 row as stale, and its opus-5 row is correct, so this one is trusted as an
+      estimate — but it is second-hand from the same table Trap 7 distrusts. Re-verify
+      against published pricing before quoting this number anywhere it matters.
+
+  # SUPERSEDED 2026-09-08 (ninth amendment): ResponseRelevancy's embeddings moved to a local
+  # sentence-transformers model with no per-token price at all — RagasCacheBackend.set()
+  # already records embeddings entries at a hardcoded $0.00 (local compute), so this row was
+  # never actually read by price_usd() even before the migration. Kept as dated historical
+  # evidence rather than deleted, the same treatment this repo gives every other retired
+  # figure (docs/api-notes.md, Trap 19's Anthropic material).
+  text-embedding-3-small:
+    input_per_mtok: 0.02
+    output_per_mtok: 0.00
+    source: >-
+      UNVERIFIED even before it was superseded. deepeval carries no embedding prices to
+      cross-check against, and this number was never confirmed against a primary source in
+      this repo.

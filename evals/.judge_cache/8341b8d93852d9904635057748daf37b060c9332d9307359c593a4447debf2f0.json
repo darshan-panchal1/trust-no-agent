@@ -1,0 +1,1 @@
+{"call_kind":"ragas:faithfulness","response":"{\"__model_dump_json__\": \"{\\\"statements\\\":[\\\"Employees should report a lost badge to Facilities right away.\\\",\\\"Facilities will issue a temporary badge the same day.\\\",\\\"Facilities processes a permanent replacement for the badge.\\\"]}\"}","input_tokens":0,"output_tokens":0,"usd":0.0}

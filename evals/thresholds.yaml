@@ -1,0 +1,20 @@
+comparison_tolerance: 0.15
+comparison_tolerance_justification: "1.5x the largest same-run noise spread measured\
+  \ (faithfulness, n=4, spread=0.0947, min=0.8040/max=0.8987/stdev=0.0434), rounded\
+  \ to 0.05 \u2014 see docs/api-notes.md"
+metrics:
+  faithfulness:
+    value: 0.8030865800865801
+    justification: midpoint of observed v1=0.7325/v2=0.8737 (delta +0.1412)
+    v1_observed: 0.7324761904761905
+    v2_observed: 0.8736969696969697
+  context_recall:
+    value: 0.72
+    justification: midpoint of observed v1=0.5600/v2=0.8800 (delta +0.3200)
+    v1_observed: 0.56
+    v2_observed: 0.88
+  RefusalCorrectness:
+    value: 0.9
+    justification: midpoint of observed v1=0.8000/v2=1.0000 (delta +0.2000)
+    v1_observed: 0.8
+    v2_observed: 1.0

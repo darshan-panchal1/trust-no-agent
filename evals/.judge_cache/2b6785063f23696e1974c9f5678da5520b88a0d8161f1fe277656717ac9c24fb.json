@@ -1,0 +1,1 @@
+{"call_kind":"deepeval:regression_demo:refusalcorrectness","response":"{\n  \"reason\": \"The expected output indicated an answerable question requiring the stipend amount. The actual output provided the correct amount ($500) without refusing or deflecting, thus matching the expected decision to answer.\",\n  \"score\": 10\n}","input_tokens":392,"output_tokens":165,"usd":null}
