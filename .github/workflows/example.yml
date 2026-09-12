@@ -1,0 +1,57 @@
+# Example usage of ./action.yml, for anyone deciding whether to adopt it — not part of this
+# repo's own required checks.
+#
+# Deliberately `workflow_dispatch`, not `pull_request`: `darshan-panchal1/trust-no-agent@v1`
+# is not a git tag yet, so resolving that reference would fail on every single PR to THIS
+# repository until one is cut — permanently breaking unrelated work for a reason no PR
+# author caused. workflow_dispatch keeps this opt-in, the same reason live.yml uses it.
+# Once a real v1 tag exists, the `gate` job below — unchanged — is what a consumer's own
+# `on: pull_request` workflow looks like.
+name: example
+
+on:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    name: trust-no-agent gate (offline, no credential)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: darshan-panchal1/trust-no-agent@v1
+        with:
+          judge-model: nvidia/nemotron-3-super-120b-a12b
+          generator-model: nvidia/nemotron-3-super-120b-a12b
+
+  regression-demo:
+    name: what the gate would catch (informational — not routed through the action)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install exact pins
+        run: uv sync --frozen
+
+      # `gate`, above, only ever evaluates this repo's own v1_naive vs v2_fixed comparison —
+      # EvalSuite has no way to point it at regression_demo's separately namespaced evidence,
+      # so this step runs the demo directly instead of through the action. Offline, from its
+      # own committed `regression_demo:*` cache: no key, no network, $0.00 (step 8).
+      - name: Replay the regression demo and confirm it is still caught
+        env:
+          DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
+          RAGAS_DO_NOT_TRACK: "true"
+          DEEPEVAL_DISABLE_DOTENV: "1"
+          JUDGE_MODEL: nvidia/nemotron-3-super-120b-a12b
+          GENERATOR_MODEL: nvidia/nemotron-3-super-120b-a12b
+        run: |
+          uv run python -c "from evals.ops.regression_demo import main; main(mode='offline')" \
+            | tee demo-output.txt
+          # Article XI: a check that has never been shown to fail is not evidence. This
+          # greps the demo's own printed verdict rather than re-deriving it, so the assertion
+          # can never silently drift from what a human reading the log actually sees.
+          grep -q "2 of 2 applicable gates broken (faithfulness, RefusalCorrectness)" demo-output.txt

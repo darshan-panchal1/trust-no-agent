@@ -1,0 +1,47 @@
+name: "trust-no-agent gate"
+description: >-
+  Runs this repository's own v1_naive/v2_fixed evaluation offline, against its committed
+  judge-cache evidence, and fails the step if a gated metric (Article IV) misses its
+  calibrated bar in evals/thresholds.yaml. No credential, no network — see evals/cli.py's
+  `gate` command, which this action wraps unchanged.
+author: darshan-panchal1
+
+inputs:
+  judge-model:
+    description: >-
+      Model identifier for the ragas/deepeval judge (Article III: no default — must match
+      a model already present in the committed evidence, or every call is a cache miss).
+    required: true
+  generator-model:
+    description: >-
+      Model identifier for the agent under test (Article III: no default, same constraint
+      as judge-model).
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Install exact pins
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: uv sync --frozen
+
+    - name: Run the gate
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      # These three (Article III.a) come from pytest's own `env` block when the suite runs
+      # under pytest — this command doesn't, so they're set here instead, before deepeval
+      # or ragas is ever imported. Without them this "offline" check attempts a telemetry
+      # call, which is exactly the hazard III.a exists to close.
+      env:
+        DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
+        RAGAS_DO_NOT_TRACK: "true"
+        DEEPEVAL_DISABLE_DOTENV: "1"
+      run: >-
+        uv run python -m evals.cli gate
+        "${{ inputs.judge-model }}"
+        "${{ inputs.generator-model }}"
