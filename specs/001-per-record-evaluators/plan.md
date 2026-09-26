@@ -7,15 +7,15 @@
 ## Summary
 
 Add a synchronous `evaluate(evaluator, record, judge=None, cache_dir=None) -> EvalResult` next to the untouched v1.0.0 API. It scores one caller-supplied record with one named evaluator. v1.1.0 ships:
-- `tna.ragas.response_relevancy`;
-- `tna.deepeval.refusal_correctness`;
+- four Ragas evaluators: `tna.ragas.faithfulness`, `tna.ragas.context_recall`, `tna.ragas.context_precision`, `tna.ragas.response_relevancy`;
+- one DeepEval evaluator: `tna.deepeval.refusal_correctness`;
 - caller-defined rubric judges, `tna.judge.<name>`.
 
 Every result carries a status, a judging fingerprint and its provenance, token counts, and a raw audit payload. Nothing raises, and nothing is silently zero.
 
 **Technical approach**:
 - **One named routing facade.** `trustnoagent/evaluators.py`, permitted by the new Article II.c, dispatches by id to one per-layer evaluator module under `evals/component/` or `evals/behavior/`.
-- **Reuse, not forks.** Those modules reuse the existing judge paths unchanged: `build_judge_llm`, `build_refusal_correctness_metric`, `CachedJudge` and `json_completion`.
+- **Reuse, not forks.** Those modules reuse the existing judge paths unchanged: `build_metrics`/`build_judge_llm`, `build_refusal_correctness_metric`, `CachedJudge` and `json_completion`.
 - **One door for cache behaviour.** Cache-directory selection, fingerprint stamping and checking, and Ragas token capture all happen at the store (`read_or_raise`/`read_or_call`), through two small context-scoped modules. When no session is active, the store behaves exactly as in v1.0.0.
 
 The research notes ([research.md](research.md)) record the verified library behaviour behind each choice.
@@ -44,7 +44,7 @@ The research notes ([research.md](research.md)) record the verified library beha
 - The cache key is unchanged (Article III).
 - v1.0.0 behaviour is byte-identical (FR-036/037).
 
-**Scale/Scope**: 2 built-in evaluators plus rubrics, about 13 new modules (each ≤60 lines), 7 modified files, 1 new workflow, and a version bump to 1.1.0.
+**Scale/Scope**: 5 built-in evaluators (all of v1's scored metrics) plus rubrics, about 13 new modules (each ≤60 lines), 7 modified files, 1 new workflow, and a version bump to 1.1.0.
 
 ## Constitution Check
 
@@ -68,7 +68,7 @@ The constitution is the repo root `CONSTITUTION.md`. No `.specify/memory/constit
 | VIII: Cost transparency | Every served call is accounted | ✅ | ✅ All calls pass through `store._record`; no fabricated USD |
 | IX: Stack | Exact pins; Python 3.12; no new deps | ✅ | ✅ Only the project version changes (1.0.0 → 1.1.0) |
 | X: Out of scope | No async, plugins, UI or provider layer | ✅ | ✅ Sync API; dict registry by import; stateless rubrics |
-| XI: Trust the harness | A negative test per metric; no `run_async` | ✅ | ✅ Negative tests are planned for both built-ins and the rubric; `measure()` is called directly, not through `assert_test` |
+| XI: Trust the harness | A negative test per metric; no `run_async` | ✅ | ✅ Negative tests are planned for all five built-ins and the rubric; `measure()` is called directly, not through `assert_test` |
 
 **Result: PASS after the Eleventh amendment.** The amendment is applied in this phase, not left pending:
 - `CONSTITUTION.md` has the sync report, the II.b text, II.c, and the history entry.
@@ -84,7 +84,7 @@ The constitution is the repo root `CONSTITUTION.md`. No `.specify/memory/constit
 6. **`cache_dir` is a public parameter, applied through a context override inside the store** (R1). An existing test pins `read_or_raise(key)`'s signature.
 7. **Rubrics are passed as definitions, and `list_evaluators(*rubrics)` lists them** (R15). There is no global registry.
 8. **The amendment also covers the `Evaluator` protocol and the contract modules**, because Article II's Forbidden clause names "protocol". It also aligns II.b's text with the imports the adapters already have.
-9. **Only two built-in ids ship, as instructed.** ⚠️ This leaves the two *gated* metrics (`faithfulness`, `context_recall`) and `context_precision` out of the new path. Adding each later is one registry entry plus its negative test. **Confirm this is intended before `/speckit-tasks`.**
+9. **All five of v1's scored metrics ship** (corrected 2026-09-26 from two). The per-record path covers every metric `EvalSuite.gate()` gates on (`faithfulness`, `context_recall`, `RefusalCorrectness`), plus the two diagnostic Ragas metrics.
 10. **No USD ceiling on the new path** (FR-035, R17).
 
 ## Project Structure
@@ -121,7 +121,9 @@ evals/
 ├── adapters/
 │   ├── ragas_adapter.py     MOD  + record_to_sample(EvalRecord)
 │   └── deepeval_adapter.py  MOD  + record_to_test_case(EvalRecord)
-├── component/record_eval.py NEW  tna.ragas.response_relevancy   (ragas only)
+├── component/record_eval.py NEW  tna.ragas.{faithfulness,context_recall,context_precision,
+│                                  response_relevancy}: one table over matrix.METRIC_NAMES (ragas only;
+│                                  the table splits into record_metrics.py if it nears 60 lines)
 ├── behavior/record_eval.py  NEW  tna.deepeval.refusal_correctness (deepeval only)
 ├── behavior/rubric_eval.py  NEW  tna.judge.<name> via CachedJudge  (deepeval only)
 └── judge/json_completion.py MOD  RESPONSE_FORMAT constant (behaviour unchanged)
@@ -151,7 +153,7 @@ CONSTITUTION.md                DONE Eleventh amendment
 1. **Contract.** `contract.py`, `judge_config.py`, `fingerprint.py`, `outcomes.py`, plus unit tests. These have no framework imports.
 2. **Store.** Add `location.py` and `session.py`, then the `store.py` hooks and field. Add `tests/test_v1_compat.py` in the **same** step, so the 1,120-entry round-trip guards the change as it happens.
 3. **DeepEval-side refusal evaluator**, and a test that it reproduces the v1 per-case score from committed evidence. Add its negative test on a v1 answer.
-4. **Ragas-side response-relevancy evaluator**, with the same reproduction and negative tests. Then usage pairing, with MockTransport live-mechanics tests.
+4. **Ragas-side evaluators, all four**, each with the same reproduction test and a negative test on a `v1_naive` answer. v1 already separates on `faithfulness` and `context_recall`, so their negatives come straight from committed evidence. Then usage pairing, with MockTransport live-mechanics tests.
 5. **Rubric**: `rubric.py` and `rubric_eval.py`, with the pass/fail/invalid tests.
 6. **Facade**, `judge_env` and exports; the statuses test across all failure classes.
 7. **`compat.yml`**, run once on the PR, and the hand-run `live_check.py`.

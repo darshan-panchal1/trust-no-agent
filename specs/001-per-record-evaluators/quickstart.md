@@ -37,7 +37,7 @@ This covers built-in records, whose evidence is already committed: a golden case
 uv run pytest tests -k "per_record and reproduces_v1" -q
 ```
 
-**Expected** for both built-in ids:
+**Expected** for all five built-in ids:
 - status `ok`, with a score equal to the v1 per-case score for the same case;
 - `fingerprint_provenance == "not_recorded"`, because it is a v1.0.0-era entry;
 - `tokens_in is None` for Ragas, since the v1 entries record 0/0.

@@ -28,7 +28,7 @@ Everything the v1.0.0 surface does today stays byte-identical.
 - **Q: Article II forbids one entry point routing to both frameworks. Amend it, or restructure?**
   → Amend. The Eleventh amendment adds Article II.c, which permits exactly one routing facade, named by path: a single entry point with no shared base class. Framework-neutral contract modules may be imported by both sides. Each framework adapter still imports only its own framework.
 - **Q: What is `tna.deepeval.answer_relevancy`?**
-  → Not shipped. v1.1.0 ships exactly `tna.ragas.response_relevancy` and `tna.deepeval.refusal_correctness`, plus caller-defined rubric judges under `tna.judge.<name>`.
+  → Not shipped. v1.1.0 ships every metric v1 already scores and holds evidence for, plus caller-defined rubric judges under `tna.judge.<name>`. *(Corrected 2026-09-26: the first answer shipped only `response_relevancy` and `refusal_correctness`. That left out `faithfulness` and `context_recall`, two of the three metrics `EvalSuite.gate()` gates on, which defeats the point of a regression-gating contract. All five now ship.)*
 - **Q: Where are live results for caller records cached?**
   → In a caller-supplied cache directory, given as a parameter and never as an env var. It defaults to the committed `evals/.judge_cache/` only inside a repo checkout. Outside one, the caller must pass a directory, and omitting it returns an `error` result.
 - **Q (planning, 2026-09-26): Where does offline/live mode live?**
@@ -205,7 +205,7 @@ A caller tracking judge cost sees real input and output token counts on results 
 
 - **FR-006**: The package MUST expose a listing of every registered evaluator. Each entry MUST show its id, version, required record fields, and output type (`score`, `label` or `bool`).
 - **FR-007**: Evaluators MUST be registered by direct import into one registry module inside this package. There MUST be no entry-point, plugin or dynamic-discovery mechanism (Article X).
-- **FR-008**: Built-in ids MUST be namespaced `tna.<framework>.<metric>`. v1.1.0 MUST register exactly two built-ins: `tna.ragas.response_relevancy` and `tna.deepeval.refusal_correctness`. `tna.deepeval.answer_relevancy` is not shipped. Registering another existing metric (faithfulness, context_recall, context_precision) later is additive: one registry entry, with no contract change.
+- **FR-008**: Built-in ids MUST be namespaced `tna.<framework>.<metric>`. v1.1.0 MUST register exactly the five metrics v1 already scores, each with committed evidence: `tna.ragas.faithfulness`, `tna.ragas.context_recall`, `tna.ragas.context_precision`, `tna.ragas.response_relevancy` and `tna.deepeval.refusal_correctness`. Three of them (`faithfulness`, `context_recall`, `refusal_correctness`) are the metrics v1 gates on. `tna.deepeval.answer_relevancy` is not shipped.
 - **FR-009**: Rubric judges MUST carry the id `tna.judge.<name>` and MUST appear in the listing when passed to it. Ids, once released, MUST be stable across minor releases and MUST NOT be reused for a different metric.
 - **FR-010**: An evaluator's version MUST identify both the evaluator's own version and the pinned upstream library it wraps (for example, `1.1.0+ragas0.4.3`, `1.1.0+deepeval4.2.0`).
 - **FR-011**: `ToolCorrectness` MUST NOT be registered in v1.1.0. The record has no tool-call fields, and Article II.a keeps that metric demonstrative, never a gate.

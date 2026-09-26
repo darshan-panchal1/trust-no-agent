@@ -38,3 +38,9 @@
    - **FR-008 (scope).** `tna.deepeval.answer_relevancy` has no existing metric or evidence behind it.
    - **FR-032 (data integrity).** It is undecided where live results for caller records are written.
 4. Everything else defaulted is recorded under Assumptions: fingerprint-mismatch handling, legacy-entry provenance, the skipped/error split, and no `guided_json`.
+5. **Re-validated 2026-09-26 after the evaluator-scope correction.** FR-008 now ships all five metrics v1 scores (`tna.ragas.faithfulness`, `context_recall`, `context_precision`, `response_relevancy`, `tna.deepeval.refusal_correctness`), up from two. Every item above still passes:
+   - no clarification markers remain;
+   - no artifact still says "two" evaluators;
+   - each Ragas id's required fields match its `_required_columns` in ragas 0.4.3, identically in `data-model.md` and `contracts/public-api.md`;
+   - FR-011 (no ToolCorrectness) is unaffected;
+   - SC-002 still holds, because the three added metrics already have committed evidence under their v1 `call_kind`s (`ragas:faithfulness` 100, `ragas:context_recall` 50, `ragas:context_precision` 175).

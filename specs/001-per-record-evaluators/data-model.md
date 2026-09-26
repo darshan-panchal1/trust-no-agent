@@ -62,11 +62,14 @@ Evaluator (typing.Protocol, structural; nothing inherits it)
 
 | id | requires | output_type | template_version | call_kind(s) |
 |---|---|---|---|---|
+| `tna.ragas.faithfulness` | `{input, output, contexts}` | `score` | `ragas@0.4.3/1` | `ragas:faithfulness` |
+| `tna.ragas.context_recall` | `{input, contexts, expected}` | `score` | `ragas@0.4.3/1` | `ragas:context_recall` |
+| `tna.ragas.context_precision` | `{input, contexts, expected}` | `score` | `ragas@0.4.3/1` | `ragas:context_precision` |
 | `tna.ragas.response_relevancy` | `{input, output}` | `score` | `ragas@0.4.3/1` | `ragas:response_relevancy`, plus `ragas:embeddings` (not fingerprinted) |
 | `tna.deepeval.refusal_correctness` | `{input, output, expected}` | `score` | `refusal-steps/1` | `deepeval:refusalcorrectness` |
 | `tna.judge.<name>` (per rubric) | as declared | `label` or `score` | content hash | `deepeval:judge.<name>` |
 
-The `call_kind` values for the built-ins are **the same strings the v1 path uses**. That is why identical inputs hit committed evidence (spec Assumptions; SC-002).
+`requires` mirrors each metric's own `_required_columns` in ragas 0.4.3 (`user_input`→`input`, `response`→`output`, `retrieved_contexts`→`contexts`, `reference`→`expected`), verified 2026-09-26. The `call_kind` values for the built-ins are **the same strings the v1 path uses**. That is why identical inputs hit committed evidence (spec Assumptions; SC-002).
 
 ## RubricJudge (`evals/rubric.py`)
 

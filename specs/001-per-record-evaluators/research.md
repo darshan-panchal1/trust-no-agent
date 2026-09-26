@@ -66,12 +66,12 @@ fingerprint: str | None = Field(default=None, exclude_if=lambda v: v is None)
 
 ## R5. Real Ragas token counts
 
-**Decision.** In live mode, the Ragas per-record evaluator registers `llm.client.on("completion:response", session.push_usage)` on the instructor client that `build_judge_llm` already built. `session.stamp` pairs each pending usage with the next write whose `call_kind` is the judge's (`ragas:response_relevancy`). `ragas:embeddings` writes are never paired.
+**Decision.** In live mode, the Ragas per-record evaluator registers `llm.client.on("completion:response", session.push_usage)` on the instructor client that `build_judge_llm` already built. `session.stamp` pairs each pending usage with the next write whose `call_kind` is the evaluator's judge kind (`ragas:faithfulness`, `ragas:context_recall`, `ragas:context_precision` or `ragas:response_relevancy`). `ragas:embeddings` writes are never paired.
 
 **Verified.**
 - **`RagasCacheBackend.set()` never sees usage.** The probe observed `set()` receive the parsed model with no `_raw_response` usage (`usage=None`), so capturing tokens inside the backend is not possible.
 - **The instructor hook fires with real usage.** It delivered `CompletionUsage(prompt_tokens=123, completion_tokens=45)` from the mocked NIM response, with no change to `build_judge_llm`.
-- **Calls are sequential.** For an `InstructorLLM`, ragas 0.4.3's `PydanticPrompt.generate_multiple` makes one synchronous `generate()` call and ignores `n` (`ragas/prompt/pydantic_prompt.py`). Each hook firing is followed by that call's write, so FIFO pairing is exact.
+- **Calls are sequential, for all four metrics.** For an `InstructorLLM`, ragas 0.4.3's `PydanticPrompt.generate_multiple` makes one synchronous `generate()` call and ignores `n` (`ragas/prompt/pydantic_prompt.py`). Faithfulness makes its statement and verdict calls one after the other. Context precision loops `for context in retrieved_contexts` (`_context_precision.py:148`), awaiting each call. Every call is sync inside ragas' cacher, with no await between the hook firing and the write, so FIFO pairing is exact even when several judge calls share one `call_kind`.
 - **The old path is untouched.** No session means no hook and no stamping, so `set()` keeps writing 0/0 (FR-037).
 
 **Alternative rejected.** An `httpx` event hook on the OpenAI client. It would need `build_judge_llm` to accept an `http_client`, which is a signature change in a 60-line module, for the same information.
@@ -125,7 +125,7 @@ fingerprint: str | None = Field(default=None, exclude_if=lambda v: v is None)
 | `CacheMiss` offline | `error` | Names the key, and says new records need live mode. |
 | `FingerprintMismatch` | `error` | Names both fingerprints; stored raw text kept. |
 | `ImportError` (live embeddings, no `calibration` group) | `error` | Names `uv sync --group calibration`. |
-| NaN from `ResponseRelevancy` (all generated questions empty) | `invalid_output` | Verified branch: `_answer_relevance.py` returns `np.nan` on "Invalid JSON response". |
+| NaN from any Ragas metric | `invalid_output` | Verified branches in ragas 0.4.3: `_answer_relevance.py` (all generated questions empty), `_faithfulness.py:192/211/262` (no statements or verdicts), `_context_recall.py:118` (zero denominator), `_context_precision.py:116` (no verdicts). |
 | Ragas output parser error, or pydantic `ValidationError` | `invalid_output` | Raw text kept. |
 | GEval `ValueError` from `trimAndLoadJson` ("outputted an invalid JSON") | `invalid_output` | Raw text kept. |
 | `json.JSONDecodeError` from `json_completion` | `invalid_output` | Raw = `exc.doc`. |

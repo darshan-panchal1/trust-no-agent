@@ -73,9 +73,14 @@ Construction raises `ValueError` on an invalid definition. The judge's reply mus
 
 ## Built-in evaluator catalogue (v1.1.0)
 
+All five metrics v1 scores, in `list_evaluators()` order (sorted by id). `faithfulness`, `context_recall` and `refusal_correctness` are the three v1 gates on.
+
 | id | version | requires | output_type |
 |---|---|---|---|
 | `tna.deepeval.refusal_correctness` | `1.1.0+deepeval@4.2.0` | `input`, `output`, `expected` | `score` (0–1) |
+| `tna.ragas.context_precision` | `1.1.0+ragas@0.4.3` | `input`, `contexts`, `expected` | `score` (0–1) |
+| `tna.ragas.context_recall` | `1.1.0+ragas@0.4.3` | `input`, `contexts`, `expected` | `score` (0–1) |
+| `tna.ragas.faithfulness` | `1.1.0+ragas@0.4.3` | `input`, `output`, `contexts` | `score` (0–1) |
 | `tna.ragas.response_relevancy` | `1.1.0+ragas@0.4.3` | `input`, `output` | `score` (0–1) |
 
 ## Example
