@@ -161,12 +161,12 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 ### Tests first
 
-- [ ] T019 [P] [US1] Write `tests/test_per_record_ragas_v1.py`. Use a session-scoped fixture computing `evals.ops.ragas_means.ragas_results(cases, answers)` once.
+- [X] T019 [P] [US1] Write `tests/test_per_record_ragas_v1.py`. Use a session-scoped fixture computing `evals.ops.ragas_means.ragas_results(cases, answers)` once.
   - For each of `faithfulness`, `context_recall`, `context_precision` and `response_relevancy`, and for golden indices 0 and 1 under both variants: `evaluate(f"tna.ragas.{name}", record)` has status `ok`, `score == pytest.approx(v1_per_case, abs=1e-9)`, `fingerprint_provenance == "not_recorded"`, `tokens_in is None` (v1 Ragas entries are 0/0), and a non-empty `judge_fingerprint`.
   - **Negative (Article XI):** at least one `v1_naive` record scores below `threshold_for(name)` for `faithfulness` and for `context_recall`.
   - Split into `_a`/`_b` if it passes 60 lines.
-- [ ] T020 [P] [US1] Write `tests/test_per_record_refusal_v1.py`: using `evals.ops.refusal_means.measured(...)`, every relevant golden case under both variants gives `evaluate("tna.deepeval.refusal_correctness", record)` status `ok`, the same score, a non-empty `explanation`, and real (non-`None`) tokens. **Negative:** at least one `v1_naive` case scores below 0.5.
-- [ ] T021 [P] [US1] Write `tests/test_per_record_surface.py`:
+- [X] T020 [P] [US1] Write `tests/test_per_record_refusal_v1.py`: using `evals.ops.refusal_means.measured(...)`, every relevant golden case under both variants gives `evaluate("tna.deepeval.refusal_correctness", record)` status `ok`, the same score, a non-empty `explanation`, and real (non-`None`) tokens. **Negative:** at least one `v1_naive` case scores below 0.5.
+- [X] T021 [P] [US1] Write `tests/test_per_record_surface.py`:
   - `inspect.iscoroutinefunction(trustnoagent.evaluate) is False`;
   - `evaluate` scoring the same golden record twice returns equal results (SC-005), with every served call counted as cached in `cost.rows()`;
   - passing a non-`EvalRecord` raises `TypeError`;
@@ -174,11 +174,11 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 ### Implementation
 
-- [ ] T022 [P] [US1] Add `record_to_sample(record: EvalRecord) -> SingleTurnSample` to `evals/adapters/ragas_adapter.py`. It maps `input→user_input`, `contexts→retrieved_contexts` (as a list), `expected→reference` and `output→response`, and must produce a sample equal to `to_single_turn_sample` for a golden-derived record. `to_single_turn_sample` is unchanged.
-- [ ] T023 [P] [US1] Add `record_to_test_case(record) -> LLMTestCase` to `evals/adapters/deepeval_adapter.py`. It sets `input`, `actual_output`, `expected_output` and `retrieval_context`. That is enough: RefusalCorrectness renders only INPUT, ACTUAL_OUTPUT and EXPECTED_OUTPUT, so the GEval prompt is identical. `to_llm_test_case` is unchanged.
-- [ ] T024 [P] [US1] Add `RESPONSE_FORMAT: Final = {"type": "json_object"}` to `evals/judge/json_completion.py` and use it in the existing `create(...)` call. Behaviour is unchanged.
-- [ ] T025 [US1] In `evals/component/matrix.py`, extract `build_metric(name, mode) -> Metric`, with the exact constructor arguments used today. Make `build_metrics(mode)` return `[build_metric(n, mode) for n in METRIC_NAMES]`: same order, same objects. This is guarded by T003, T004 and the existing component tests.
-- [ ] T026 [US1] Create `evals/component/record_eval.py`, which is ragas-only; put the table in `evals/component/record_metrics.py` if it nears 60 lines.
+- [X] T022 [P] [US1] Add `record_to_sample(record: EvalRecord) -> SingleTurnSample` to `evals/adapters/ragas_adapter.py`. It maps `input→user_input`, `contexts→retrieved_contexts` (as a list), `expected→reference` and `output→response`, and must produce a sample equal to `to_single_turn_sample` for a golden-derived record. `to_single_turn_sample` is unchanged.
+- [X] T023 [P] [US1] Add `record_to_test_case(record) -> LLMTestCase` to `evals/adapters/deepeval_adapter.py`. It sets `input`, `actual_output`, `expected_output` and `retrieval_context`. That is enough: RefusalCorrectness renders only INPUT, ACTUAL_OUTPUT and EXPECTED_OUTPUT, so the GEval prompt is identical. `to_llm_test_case` is unchanged.
+- [X] T024 [P] [US1] Add `RESPONSE_FORMAT: Final = {"type": "json_object"}` to `evals/judge/json_completion.py` and use it in the existing `create(...)` call. Behaviour is unchanged.
+- [X] T025 [US1] In `evals/component/matrix.py`, extract `build_metric(name, mode) -> Metric`, with the exact constructor arguments used today. Make `build_metrics(mode)` return `[build_metric(n, mode) for n in METRIC_NAMES]`: same order, same objects. This is guarded by T003, T004 and the existing component tests.
+- [X] T026 [US1] Create `evals/component/record_eval.py`, which is ragas-only; put the table in `evals/component/record_metrics.py` if it nears 60 lines.
   - Export `LIB = f"ragas@{ragas.__version__}"`, `TEMPLATE_VERSION = f"{LIB}/1"`, and a `REQUIRES` table:
     - faithfulness: `{input, output, contexts}`
     - context_recall and context_precision: `{input, contexts, expected}`
@@ -190,14 +190,14 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
     - `with session.begin(cfg, f"ragas:{name}"): score = metric.single_turn_score(record_to_sample(record))`;
     - `outcomes.ok(...)` with `result_fingerprint(cfg, record_hash(record, REQUIRES[name]))` and the `served` map of the session `begin()` yields, captured before exit.
   - **If T019 shows cache misses**, the prompt shape differs from the v1 path. Switch the scoring call to `evaluate(EvaluationDataset(samples=[sample]), metrics=[metric], raise_exceptions=True, show_progress=False)`, the exact call shape `evals/ops/ragas_means.py` uses, and read `result[name][0]`.
-- [ ] T027 [US1] Create `evals/behavior/record_eval.py`, which is deepeval-only.
+- [X] T027 [US1] Create `evals/behavior/record_eval.py`, which is deepeval-only.
   - Export `LIB = f"deepeval@{deepeval.__version__}"`, `TEMPLATE_VERSION = "refusal-steps/1"` and `REQUIRES = {input, output, expected}`.
   - `evaluate_refusal(info, record, judge)`:
     - `metric = build_refusal_correctness_metric(judge.mode)`;
     - `cfg` uses decoding `{"response_format": RESPONSE_FORMAT}` and schema `f"{LIB}:GEval"`;
     - inside `session.begin(cfg, "deepeval:refusalcorrectness")`, call `metric.measure(record_to_test_case(record))` directly (never `assert_test`);
     - return `outcomes.ok(score=metric.score, explanation=metric.reason, ...)`.
-- [ ] T028 [US1] Create `trustnoagent/evaluators.py`, the Article II.c facade, which imports no framework.
+- [X] T028 [US1] Create `trustnoagent/evaluators.py`, the Article II.c facade, which imports no framework.
   - `REGISTRY: dict[str, Callable[[EvaluatorInfo, EvalRecord, JudgeConfig], EvalResult]]` holds the four ragas ids (via `functools.partial(evaluate_ragas, name)`) and `tna.deepeval.refusal_correctness`, filled by direct import.
   - `INFOS: dict[str, EvaluatorInfo]` holds `version = f"{__version__}+{LIB}"` from each layer's `LIB`. Import `__version__` from a leaf, `trustnoagent/version.py`, created here to avoid a circular import from `trustnoagent/__init__.py`. `__init__` re-exports it, so `trustnoagent.__version__` is unchanged.
   - `evaluate(evaluator, record, judge=None, cache_dir=None)`:
@@ -206,8 +206,17 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
     - `directory = cache_dir or default_cache_dir(store.CACHE_DIR)`;
     - `with location.override(directory):` time the registry call and return `dataclasses.replace(result, latency_ms=...)`.
   - Unknown ids and failure mapping come in US2 and US3.
-- [ ] T029 [US1] Export `evaluate`, `EvalRecord`, `EvalResult`, `EvaluatorInfo` and `JudgeConfig` from `trustnoagent/__init__.py`, keeping every v1.0.0 export.
-- [ ] T030 [US1] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`). T019–T021 are green.
+- [X] T029 [US1] Export `evaluate`, `EvalRecord`, `EvalResult`, `EvaluatorInfo` and `JudgeConfig` from `trustnoagent/__init__.py`, keeping every v1.0.0 export.
+- [X] T030 [US1] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`). T019–T021 are green.
+
+**Phase 3 as built (2026-09-26), where it differs from the task text:**
+- **T019 held without the fallback.** `single_turn_score` renders the same prompts as v1's batch `evaluate()`, so every golden-shaped record hits committed evidence: 16 reproduction cases, exact to 1e-9, including fractional scores such as 0.6667 and 0.6039. T026's one-record-dataset fallback was not applied.
+- No v1 reference score is NaN, so T019's `invalid_output` branch is not exercised by committed evidence. US3's T035 covers NaN directly.
+- The negative tests are in a separate file, `tests/test_per_record_ragas_v1_negative.py` (60-line cap). They pick the worst `v1_naive` case from v1's own scores, then score it through the new path.
+- The v1 reference scores come from a non-collected helper, `tests/per_record_v1.py`. It is reached only through `evals.ops`, never the layers directly (Article II.c).
+- deepeval's version comes from `deepeval._version`, because `deepeval.__version__` is set lazily and mypy cannot see it. It resolves to `deepeval@4.2.0`.
+- `evaluate()` already returns `error` for a missing `cache_dir` outside a checkout (transition 3). mypy needed `directory` narrowed, so that one piece of T038 landed early. Unknown ids still raise `KeyError` until US2's T032.
+- Non-empty record `metadata` is copied into `raw["metadata"]` by the facade.
 
 **Checkpoint (MVP)**: a caller scores any of the five metrics on their own record through one import, offline, reproducing v1 exactly.
 

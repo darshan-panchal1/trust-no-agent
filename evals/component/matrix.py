@@ -24,20 +24,27 @@ from evals.ragas_llm import build_judge_llm
 METRIC_NAMES = ("faithfulness", "context_recall", "context_precision", "response_relevancy")
 
 
+def build_metric(name: str, mode: Literal["offline", "live"] = "offline") -> Metric:
+    """One metric with its own cached judge (Trap 19 fix). Only `response_relevancy` builds
+    embeddings — so scoring one other metric live never imports the calibration group."""
+    llm = build_judge_llm(name, mode)
+    metric: Metric
+    if name == "faithfulness":
+        metric = Faithfulness(name=name, llm=llm)
+    elif name == "context_recall":
+        metric = LLMContextRecall(name=name, llm=llm)
+    elif name == "context_precision":
+        metric = LLMContextPrecisionWithReference(name=name, llm=llm)
+    elif name == "response_relevancy":
+        metric = ResponseRelevancy(name=name, llm=llm, embeddings=build_judge_embeddings(mode))
+    else:
+        raise KeyError(f"no ragas metric named {name!r}; expected one of {METRIC_NAMES}")
+    return metric
+
+
 def build_metrics(mode: Literal["offline", "live"] = "offline") -> list[Metric]:
-    """One metric instance per name, each with its own cached judge (Trap 19 fix)."""
-    return [
-        Faithfulness(name="faithfulness", llm=build_judge_llm("faithfulness", mode)),
-        LLMContextRecall(name="context_recall", llm=build_judge_llm("context_recall", mode)),
-        LLMContextPrecisionWithReference(
-            name="context_precision", llm=build_judge_llm("context_precision", mode)
-        ),
-        ResponseRelevancy(
-            name="response_relevancy",
-            llm=build_judge_llm("response_relevancy", mode),
-            embeddings=build_judge_embeddings(mode),
-        ),
-    ]
+    """Every metric, in `METRIC_NAMES` order — the v1 path's exact set."""
+    return [build_metric(name, mode) for name in METRIC_NAMES]
 
 
 def mean_score(result: EvaluationResult, metric_name: str) -> float:

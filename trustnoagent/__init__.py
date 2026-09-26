@@ -5,10 +5,24 @@ real internal layout (facade, not a rename) — see the packaging plan for why.
 
 from __future__ import annotations
 
-from evals.contract import Mode
+from evals.contract import EvalRecord, EvalResult, Mode
+from evals.evaluator import EvaluatorInfo
+from evals.judge_config import JudgeConfig
 from evals.ops.run_summary import RunSummary
+from trustnoagent.evaluators import evaluate
 from trustnoagent.suite import EvalSuite, run_gate
+from trustnoagent.version import __version__
 
-__version__ = "1.1.0"
-
-__all__ = ["EvalSuite", "Mode", "RunSummary", "__version__", "run_gate"]
+# v1.0.0's five names are unchanged; v1.1.0 adds the per-record contract (additive only).
+__all__ = [
+    "EvalRecord",
+    "EvalResult",
+    "EvalSuite",
+    "EvaluatorInfo",
+    "JudgeConfig",
+    "Mode",
+    "RunSummary",
+    "__version__",
+    "evaluate",
+    "run_gate",
+]
