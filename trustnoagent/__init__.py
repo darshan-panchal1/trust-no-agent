@@ -8,6 +8,6 @@ from __future__ import annotations
 from evals.ops.run_summary import RunSummary
 from trustnoagent.suite import EvalSuite, Mode, run_gate
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __all__ = ["EvalSuite", "Mode", "RunSummary", "__version__", "run_gate"]

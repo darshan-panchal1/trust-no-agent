@@ -34,8 +34,8 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Purpose**: confirm the baseline and set the release version, so evaluator version strings are right from the first test.
 
-- [ ] T001 Confirm the branch is `001-per-record-evaluators` and run GATE against `pyproject.toml`'s configuration. Record the baseline counts (expected: 131 passed, 2 skipped, 3 xfailed, `$0.00`) in the PR description draft.
-- [ ] T002 Bump the version from `1.0.0` to `1.1.0` in `pyproject.toml` (`[project] version`) and `trustnoagent/__init__.py` (`__version__`). Then run `uv lock --offline` and confirm `git diff uv.lock` shows only the `trust-no-agent` version line (around line 2203). Run GATE.
+- [X] T001 Confirm the branch is `001-per-record-evaluators` and run GATE against `pyproject.toml`'s configuration. Record the baseline counts (expected: 131 passed, 2 skipped, 3 xfailed, `$0.00`) in the PR description draft.
+- [X] T002 Bump the version from `1.0.0` to `1.1.0` in `pyproject.toml` (`[project] version`) and `trustnoagent/__init__.py` (`__version__`). Then run `uv lock --offline` and confirm `git diff uv.lock` shows only the `trust-no-agent` version line (around line 2203). Run GATE.
 
 **Checkpoint**: GATE green. The version is 1.1.0 and no behaviour has changed.
 

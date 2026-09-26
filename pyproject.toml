@@ -1,6 +1,6 @@
 [project]
 name = "trust-no-agent"
-version = "1.0.0"
+version = "1.1.0"
 description = "An LLM-agent evaluation harness that proves an agent is broken when its outputs look fine."
 readme = "README.md"
 requires-python = "==3.12.*"
