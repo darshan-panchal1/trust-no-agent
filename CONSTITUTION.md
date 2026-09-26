@@ -1,5 +1,20 @@
 <!--
-SYNC IMPACT REPORT — Tenth amendment, 2026-09-09
+SYNC IMPACT REPORT — Eleventh amendment, 2026-09-26
+Ordinal step: Tenth → Eleventh. Under semver this step would be MINOR — one permission is
+added, one existing permission is restated to match the code it already governs; no rule is
+removed and no evidence is touched.
+Modified: Article II.b (the adapter import permission names every framework-free input type
+  it actually admits — evals/golden/, app.models, evals/contract.py — instead of
+  evals/golden/ alone, which app.models had already outgrown since Slice 1).
+Added: Article II.c — exactly one routing facade, trustnoagent/evaluators.py, named by
+  path, may reach both eval layers to serve the per-record evaluator contract (spec
+  001-per-record-evaluators). Enforced by tests/test_article_ii_facade.py.
+Unchanged on purpose: Article II's Forbidden clause (no unified score, no shared base class,
+  no framework type crossing layers); the component↔behavior no-edge rule; Article III's
+  cache key; Article X's plugin ban — the facade's registry is filled by direct import.
+Cost: none to recorded evidence. All 1,120 committed entries keep their keys.
+
+Prior report — Tenth amendment, 2026-09-09
 Ordinal step: Ninth → Tenth. This document tracks changes as dated ordinal amendments and
 has never carried a semver line; none is introduced here. Under semver this step would be
 MAJOR — the required credential changes, which breaks every existing setup. Same
@@ -142,7 +157,7 @@ The metric's measured semantics — including this table — are restated in its
 
 Adapters for both frameworks **may** live in a single directory, `evals/adapters/`, subject to one condition:
 
-- **Each adapter module imports from exactly one framework — ragas or deepeval, never both — plus `evals/golden/`.** That is the entire permission. There is no second exception, and no module may be added there that speaks to neither framework or to both.
+- **Each adapter module imports from exactly one framework — ragas or deepeval, never both — plus framework-free input types: `evals/golden/`, `app.models`, and `evals/contract.py`.** That is the entire permission. There is no second exception, and no module may be added there that speaks to neither framework or to both. *(Eleventh amendment: the clause used to name `evals/golden/` alone. Both adapters have imported `app.models`' `AgentResult` since Slice 1, so the text was narrower than the code it governed. It now names what it admits. The property it protects is unchanged: each of these modules is framework-free, so importing one never carries a framework type across a layer.)*
 
 **Why the directory moved, and why the rule did not.** The constraint this article exists to protect is **no cross-framework type leakage and no shared abstraction spanning both**. A directory boundary was only ever a proxy for that property, and a weak one: two modules in separate packages can still import each other, and separation by folder proves nothing a reader can rely on. **The property is enforced by import direction, not by physical directory separation.** Filing the two adapters side by side makes the one-framework-each rule visible in a single listing, where a reviewer can check it, instead of spreading it across two packages where only a graph walk would catch a violation.
 
@@ -151,6 +166,27 @@ Adapters for both frameworks **may** live in a single directory, `evals/adapters
 **Enforced by.** `tests/test_constitution.py`, over the module import graph rather than over filenames: **no module under `evals/adapters/` may have import edges to both frameworks**; `ragas_adapter` is reachable only from `evals/component/`, and `deepeval_adapter` only from `evals/behavior/`. A filename-based check would pass on a module that merely avoided saying `deepeval` in its own name.
 
 **Cost.** A reader looking for one layer's adapter finds it one directory away from that layer rather than beside it. Accepted, because the enforcement moves from a convention a reviewer has to notice to an assertion that fails in CI.
+
+### II.c — Exactly one routing facade *(Eleventh amendment)*
+
+The per-record evaluator contract (`specs/001-per-record-evaluators/`) lets a caller score one record with one named evaluator through one entry point. Evaluator ids name their framework (`tna.ragas.*`, `tna.deepeval.*`, `tna.judge.*`), so that entry point has to reach both layers. **Exactly one module may do so to route a call: `trustnoagent/evaluators.py`, carved out by name, not by pattern**, the same discipline as Article I.a's CLI.
+
+- **It routes; it does not score.** It holds a registry filled by direct import (Article X's plugin ban stands: no entry points, no discovery). It picks one per-layer evaluator by id and returns that evaluator's own result. **It never combines, averages or compares results across evaluators.** The Forbidden clause's "unified score" is still forbidden, here too.
+- **It imports no framework.** It imports the per-layer evaluator modules under `evals/component/` and `evals/behavior/`, and framework-free contract modules. It never imports `ragas` or `deepeval` itself.
+- **Each per-layer evaluator module still speaks to exactly one framework**, and Article II's no-edge rule between `evals/component/` and `evals/behavior/` is untouched.
+- **Shared types are framework-free, and nothing inherits across the line.**
+  - The contract modules are `evals/contract.py` (the `Evaluator` protocol, `EvalRecord`, `EvalResult`), `evals/judge_config.py`, `evals/fingerprint.py`, `evals/outcomes.py` and `evals/rubric.py`. They import neither framework.
+  - `Evaluator` is a structural `typing.Protocol`. No class on either side inherits from a class the other side uses.
+  - Records cross as plain fields and results come back as plain values; no framework type crosses.
+
+**Why this is not what the Forbidden clause bans.** That clause exists so a Ragas diagnostic and a DeepEval verdict can never become interchangeable: one number, one base class, one abstraction that hides which question was asked. A router that returns one evaluator's result, stamped with an id that names its framework, hides nothing. The repo already had the same shape without a name: `evals/ops/coverage.py` and `evals/ops/record.py` have imported both layers since before v1.0.0, as operator orchestration. This article names that permission and caps it rather than leaving it unwritten.
+
+**Enforced by.** `tests/test_article_ii_facade.py`, over the import graph:
+- the modules that import both `evals.component` and `evals.behavior` are at most the two pre-existing operator modules plus `trustnoagent/evaluators.py`, each named;
+- the facade imports neither framework;
+- no contract module imports either framework.
+
+**Cost.** Two modules that look like they span the layers, where there used to be none by name. Accepted, because the alternative was a caller importing Ragas and DeepEval directly to score one answer. That rebuilds the judge outside the one door (VI.a) and the evidence store outside Article III, which is the failure this repository exists to expose.
 
 ---
 
@@ -458,3 +494,16 @@ These articles change only by a pull request that edits this file, states which 
   **Cost: this is the first amendment that is not free, and the ninth predicted it.** That entry closed by calling itself "the last one saved by that timing, since the next live pass ends it." The pass ran on 2026-09-09. `evals/.judge_cache/` held **191 entries**, and changing `JUDGE_MODEL`/`GENERATOR_MODEL` **invalidates 149 of them** — every `generate:*` and every `ragas:*` metric key, since both derive from the two values this amendment changes. **42 `ragas:embeddings` entries survive**, keyed on the local `sentence-transformers` model the ninth amendment moved in-process — an unplanned dividend of that decision, and the first time this repository's evidence has partially survived a provider change. No `deepeval:*` entries existed to lose; T3.8a has never run. **The invalidated evidence was committed first, at `4584441`, specifically so this amendment orphans it in the open** — Article III requires a cache change to be reviewable as a change to the evidence, and that applies most when the change is deletion by another name. Nothing was discarded and nothing was rewritten to match the new decision.
 
   **Flagged, and deliberately not adopted: a path that might lift Article III's coarse-scoring ceiling.** §V8.5 found that `deepeval`'s own `LiteLLMModel` **does** define `a_generate_raw_response` — the method whose absence causes the fallback — unlike every provider judge this repository has hand-written across three providers. It is the first candidate for fine-grained GEval scoring that has appeared in four rounds of investigation. It is **not** adopted here: `litellm` was never installed, no live call was made, and neither its cache hook nor its cost-table source was inspected — the checks `AnthropicModel` and the Groq judge each had to pass. Recorded so a future amendment starts from a known lead rather than rediscovering it. Applied to both `CONSTITUTION.md` and `.specify/memory/constitution.md`.
+
+- **2026-09-26 — Eleventh amendment.** The per-record evaluator contract (`specs/001-per-record-evaluators/`, release v1.1.0) needs one public entry point that can route to either framework's evaluator. Two changes.
+
+  **1. Added II.c — exactly one routing facade.** `trustnoagent/evaluators.py` is carved out by name. It may import both layers' per-record evaluator modules to route `evaluate(id, record)` by id prefix. It imports no framework itself, never combines results, and relies only on framework-free contract modules for shared types. The `Evaluator` protocol those modules define is structural; nothing inherits across the line. Enforced by `tests/test_article_ii_facade.py`, which also names the two operator modules (`evals/ops/coverage.py`, `evals/ops/record.py`) that already imported both layers without a written permission. Before this amendment, nothing would have stopped a third.
+
+  **2. II.b says what it admits.** The adapter permission read "one framework plus `evals/golden/`", yet both adapters have imported `app.models` since Slice 1 and the new per-record conversion imports `evals/contract.py`. The clause now names all three framework-free input types. Nothing it forbade before is permitted now.
+
+  **Not amended, and why.**
+  - **Article III's cache key.** The per-record path stores a judging fingerprint *beside* each new entry, never in the key. Every committed entry keeps its key, and this is verified by re-serialising all 1,120 byte-for-byte.
+  - **Article III's "anything that moves the output moves the key".** The fingerprint does not loosen it. It covers the one gap the key cannot see (decoding parameters and output schema): an entry whose stored fingerprint disagrees with the current one is refused, never served.
+  - **Article X.** Its async and plugin bans reach the new path unchanged. `evaluate()` is synchronous, and the registry is a dict filled by import.
+
+  **Cost: none to recorded evidence.**
