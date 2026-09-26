@@ -16,7 +16,7 @@ from ragas.metrics import (
     LLMContextRecall,
     ResponseRelevancy,
 )
-from ragas.metrics.base import Metric
+from ragas.metrics.base import Metric, SingleTurnMetric
 
 from evals.embeddings import build_judge_embeddings
 from evals.ragas_llm import build_judge_llm
@@ -24,11 +24,11 @@ from evals.ragas_llm import build_judge_llm
 METRIC_NAMES = ("faithfulness", "context_recall", "context_precision", "response_relevancy")
 
 
-def build_metric(name: str, mode: Literal["offline", "live"] = "offline") -> Metric:
+def build_metric(name: str, mode: Literal["offline", "live"] = "offline") -> SingleTurnMetric:
     """One metric with its own cached judge (Trap 19 fix). Only `response_relevancy` builds
     embeddings — so scoring one other metric live never imports the calibration group."""
     llm = build_judge_llm(name, mode)
-    metric: Metric
+    metric: SingleTurnMetric
     if name == "faithfulness":
         metric = Faithfulness(name=name, llm=llm)
     elif name == "context_recall":

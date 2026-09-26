@@ -16,7 +16,7 @@ from evals.component import record_eval as component
 from evals.contract import EvalRecord, EvalResult, RecordField
 from evals.evaluator import EvaluatorInfo
 from evals.judge_config import JudgeConfig
-from trustnoagent.results import finish, no_directory, unknown_evaluator
+from trustnoagent.results import failure, finish, no_directory, require_types, unknown_evaluator
 from trustnoagent.version import __version__
 
 Scorer = Callable[[EvaluatorInfo, EvalRecord, JudgeConfig], EvalResult]
@@ -38,19 +38,20 @@ def evaluate(
     evaluator: str, record: EvalRecord, judge: JudgeConfig | None = None,
     cache_dir: Path | None = None,
 ) -> EvalResult:
-    if not isinstance(evaluator, str):
-        raise TypeError(f"evaluator must be an id string, not {type(evaluator).__name__}")
-    if not isinstance(record, EvalRecord):
-        raise TypeError(f"record must be an EvalRecord, not {type(record).__name__}")
+    require_types(evaluator, record)
     if (info := INFOS.get(evaluator)) is None:
         return unknown_evaluator(evaluator, sorted(INFOS))
-    config = judge or JudgeConfig.from_env()
-    directory = cache_dir or location.default_cache_dir(store.CACHE_DIR)
-    if directory is None:
-        return no_directory(info)
     started = time.monotonic()
-    with location.override(directory):
-        result = REGISTRY[evaluator](info, record, config)
+    try:  # nothing an evaluator raises escapes: it becomes a status (spec FR-004)
+        config = judge or JudgeConfig.from_env()
+        directory = cache_dir or location.default_cache_dir(store.CACHE_DIR)
+        if directory is None:
+            result = no_directory(info)
+        else:
+            with location.override(directory):
+                result = REGISTRY[evaluator](info, record, config)
+    except Exception as exc:  # noqa: BLE001 — the point: any failure becomes a result
+        result = failure(info, exc)
     return finish(result, record, started)
 
 

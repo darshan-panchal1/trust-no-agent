@@ -145,7 +145,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 - The store's hooks `observe`/`stamp` live in `evals/cache/judging.py`; `evals/cache/session.py` keeps the state, `begin()`, `active()` and `push_usage`. There is no `session.current()`: use the session `begin()` yields.
 - `read_or_call`'s hit branch delegates to `read_or_raise` (same read, record and observe), which keeps `store.py` at 60 lines.
 - `trustnoagent/__init__.py` imports `Mode` from `evals.contract`. Ruff's PLC0414 rejects the `as Mode` re-export idiom in `suite.py`. `trustnoagent.suite.Mode` still resolves at runtime.
-- T017's helper is the `MockNim` class, installed with `monkeypatch.setattr(openai, "OpenAI", MockNim(handler))`. It exposes `.calls`.
+- T017's helper is the `MockNim` class, now in `tests/per_record_nim.py` (60-line cap), installed with `install(monkeypatch, MockNim(handler))`. It exposes `.calls`. **Never replace `openai.OpenAI` itself**: `instructor.from_openai` runs `isinstance(client, openai.OpenAI)`, which raises once that name is not a class. `install` swaps only the `openai` name inside the three NIM construction points. Found in Phase 5 by probing live-mode failures.
 - `tests/test_outcomes.py` was added so T016 had its tests first.
 - T004's cost check measures a before/after delta instead of resetting `cost`, which would have erased earlier tests' rows from Article VIII's end-of-run table.
 
@@ -254,14 +254,14 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Independent test**: T034 and T035 pass, and every non-`ok` result in them has `score is None` and `label is None`.
 
-- [ ] T034 [P] [US3] Write `tests/test_per_record_statuses_input.py`:
+- [X] T034 [P] [US3] Write `tests/test_per_record_statuses_input.py`:
   - a record missing `contexts`, scored with faithfulness → `skipped` naming `contexts`, with no new `cost.rows()` entries;
   - `contexts=()`, which is present → not `skipped`;
   - `evaluate("tna.judge.x", r)` → `error` explaining that rubrics are passed as definitions;
   - `JUDGE_MODEL` deleted with `judge=None` → `error` naming `JUDGE_MODEL`;
   - `location.default_cache_dir` monkeypatched to return `None`, with `cache_dir=None` → `error` asking for a directory;
   - a novel record (not in the golden set) offline → `error` naming a cache key and the word `live`.
-- [ ] T035 [P] [US3] Write `tests/test_per_record_statuses_judge.py`. Monkeypatch the scoring call inside each layer module:
+- [X] T035 [P] [US3] Write `tests/test_per_record_statuses_judge.py`. Monkeypatch the scoring call inside each layer module:
   - `float("nan")` → `invalid_output`;
   - ragas `RagasOutputParserException` → `invalid_output`;
   - pydantic `ValidationError` → `invalid_output`;
@@ -269,16 +269,31 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
   - `ImportError` → `error` naming `uv sync --group calibration`;
   - `RuntimeError("boom")` → `error` containing `RuntimeError: boom`.
   - Assert that no exception propagates. This file imports only the facade and `evals.component.record_eval`; use a second file for the behaviour-side patches, per rule 2.
-- [ ] T036 [US3] In `evals/component/record_eval.py`, catch `RagasOutputParserException` and pydantic `ValidationError` → `outcomes.invalid`, and catch `ImportError` → `outcomes.error` naming `uv sync --group calibration`. NaN is already handled by `outcomes.ok`.
-- [ ] T037 [US3] In `evals/behavior/record_eval.py`, catch a `ValueError` whose message contains "invalid JSON" → `outcomes.invalid`.
-- [ ] T038 [US3] In `trustnoagent/evaluators.py`, apply the data-model transition order:
+- [X] T036 [US3] In `evals/component/record_eval.py`, catch `RagasOutputParserException` and pydantic `ValidationError` → `outcomes.invalid`, and catch `ImportError` → `outcomes.error` naming `uv sync --group calibration`. NaN is already handled by `outcomes.ok`.
+- [X] T037 [US3] In `evals/behavior/record_eval.py`, catch a `ValueError` whose message contains "invalid JSON" → `outcomes.invalid`.
+- [X] T038 [US3] In `trustnoagent/evaluators.py`, apply the data-model transition order:
   1. unknown id / bare `tna.judge.*` → error;
   2. `JudgeConfig.from_env()` raising `RuntimeError` → error;
   3. missing directory → error;
   4. (layer) skipped;
   5. `CacheMiss` → error with "new records need live mode" appended;
   6. `except Exception` → error `f"{type(e).__name__}: {e}"` as the FR-004 safety net.
-- [ ] T039 [US3] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+- [X] T039 [US3] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+
+**Phase 5 as built (2026-09-26), where it differs from the task text:**
+- **Malformed judge output is more varied than T035/T037 assumed.** Probed against the pinned libraries with a mocked NIM:
+  - **Ragas** raises `instructor`'s `InstructorRetryException` (after 4 attempts) for a reply that fails to parse, and `IncompleteOutputException` for truncation. An HTTP failure raises the *same* `InstructorRetryException`. `last_completion` tells them apart: set means the provider replied and the reply was unusable (`invalid_output`, with the reply text kept); unset means no reply ever arrived (`error`).
+  - **GEval never validates.** It raises `json.JSONDecodeError` (text is not JSON; `doc` holds the text), a bare `KeyError` (JSON of the wrong shape) or a `ValueError` (score not a number). T037's "ValueError containing invalid JSON" alone would have let two of the three escape as `error`. A bare `KeyError` could be an ordinary bug, so it counts as malformed output only when a judge reply was actually obtained (a served evidence entry), or when it carries GEval's own "invalid JSON" message.
+- **`EvalResult` now enforces its own invariant** in `__post_init__`: a non-`ok` result cannot carry a score or label, and a score is never NaN. Not in the task text; it makes "no failed result carries a verdict" structural rather than a convention of the builders.
+- **`_score` and `_measure` are the monkeypatch hooks** in `evals/component/record_eval.py` and `evals/behavior/record_eval.py`, so tests replace only the scoring call.
+- **`trustnoagent/results.py` gained** `require_types`, `failure` and the rubric-id message. `failure` caps messages at 500 characters (a provider error body can be huge) and, for a cache miss, drops the store's `record` refresh advice, which is wrong for a caller's own record (spec edge case).
+- **A missing field is now reported in alphabetical order** (`sorted(needs)`), replacing per-module order tuples. Deterministic, and it saved the lines the 60-line cap needed.
+- **`build_metric` is annotated `-> SingleTurnMetric`** (annotation only), removing a runtime `isinstance` guard from `record_eval.py`.
+- **The `ImportError` mapping wraps `build_metric`**, the one place a live `response_relevancy` imports the calibration group.
+- **Tests split across more files than T034/T035 listed** (60-line cap): `_input`, `_evidence`, `_ragas` (with `tests/per_record_ragas_failures.py`), `_deepeval` (end to end through `MockNim`), `_discriminator`, `_escape`, plus `test_contract_invariants.py`.
+- **A live call with no key in the environment currently yields `error: "KeyError: 'NVIDIA_API_KEY'"`.** It is a status, not an exception, but cryptic. US5's T049 replaces it with a message naming the variable.
+- **Article XI check:** 7 mutations, each disabling one safeguard (the safety net, the provider-versus-bad-reply split, the KeyError discriminator, the cache-miss wording, NaN handling, session cleanup, the invariant). All 7 were caught by the new tests; every file was restored afterwards.
+- **Finding, not fixed here (Article IX):** `instructor` is imported directly by `evals/ragas_llm.py` (since the original harness commit) and now also by `evals/component/record_failure.py`, yet is not pinned in `pyproject.toml`. It resolves transitively at 1.16.0 in `uv.lock`. An explicit `instructor==1.16.0` pin is permitted by "no new dependencies unless already available transitively" and would change `pyproject.toml` and the lockfile; it is left for a decision.
 
 ---
 
@@ -304,7 +319,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
   - `{"verdict":"x"}` → `invalid_output`.
   - Same name, different instructions → different `judge_fingerprint`, and the second is not served the first's entry.
   - `list_evaluators(r)` ends with `r`'s info.
-  - **Live:** `mock_nim` returns non-JSON content twice → `invalid_output`, with `raw` = that content and no file written.
+  - **Live:** `MockNim` returns non-JSON content twice → `invalid_output`, with `raw` = that content and no file written.
 - [ ] T042 [P] [US4] Create `evals/rubric.py`, which is framework-free (pydantic and stdlib only):
   - a frozen `RubricJudge(name, instructions, requires, labels=None, score_range=None)`, validated in `__post_init__`;
   - properties `id`, `output_type` and `template_version` (`sha256(canonical_json(...))[:16]`);
@@ -346,7 +361,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Independent test**: T051 passes, and the committed cache is unchanged (`git status evals/.judge_cache` is clean).
 
-- [ ] T051 [P] [US6] Write `tests/test_per_record_fingerprint.py`, using `isolated_cache`, `cache_dir=store.CACHE_DIR` and `mock_nim` injected by `monkeypatch.setattr(openai, "OpenAI", mock_nim(handler))` with a `JudgeConfig(mode="live", api_key="nvapi-test")`.
+- [ ] T051 [P] [US6] Write `tests/test_per_record_fingerprint.py`, using `isolated_cache`, `cache_dir=store.CACHE_DIR` and a `MockNim` from `tests/per_record_nim.py` installed with `install(monkeypatch, MockNim(handler))` with a `JudgeConfig(mode="live", api_key="nvapi-test")`.
   - A live refusal call writes an entry whose JSON contains `"fingerprint"`.
   - An offline re-run returns an equal result with `fingerprint_provenance == "recorded"`.
   - Rewriting that file's `"fingerprint"` to `"0"*64`, then re-running, gives `error` whose message contains both the stored and the expected value, with the stored text in `raw["responses"]`.
@@ -363,7 +378,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Independent test**: T054 passes, with the mock transport's call count unchanged on the cached re-run.
 
-- [ ] T054 [P] [US7] Write `tests/test_per_record_ragas_tokens.py`, using `isolated_cache`, `cache_dir=store.CACHE_DIR`, and faithfulness, which needs no embeddings. `mock_nim` returns an instructor TOOLS-mode reply chosen by the requested tool name: `StatementGeneratorOutput` → `{"statements":["s1"]}`; the NLI output → one verdict of 1. Each reply carries `usage` 123/45.
+- [ ] T054 [P] [US7] Write `tests/test_per_record_ragas_tokens.py`, using `isolated_cache`, `cache_dir=store.CACHE_DIR`, and faithfulness, which needs no embeddings. `MockNim` (`tests/per_record_nim.py`, installed with `install(monkeypatch, ...)`) returns an instructor TOOLS-mode reply chosen by the requested tool name: `StatementGeneratorOutput` → `{"statements":["s1"]}`; the NLI output → one verdict of 1. Each reply carries `usage` 123/45.
   - Live `evaluate("tna.ragas.faithfulness", rec, live_cfg)` → `ok`, `tokens_in == 246`, `tokens_out == 90`, and both written judge entries carry real tokens and a `fingerprint`.
   - Re-running makes no new HTTP calls and returns an equal result.
   - A `RagasCacheBackend("ragas:faithfulness", ..., mode="live").set(...)` outside `evaluate()` still writes 0/0.

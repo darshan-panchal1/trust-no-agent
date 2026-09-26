@@ -5,6 +5,7 @@ value crossing the routing facade carries nothing from either layer. The structu
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Literal
@@ -47,4 +48,11 @@ class EvalResult:
     tokens_out: int | None = None
     error: str | None = None
     raw: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Structural, so a builder that forgets fails where it is written (spec FR-014)."""
+        if self.status != "ok" and (self.score is not None or self.label is not None):
+            raise ValueError(f"a {self.status!r} result cannot carry a verdict (score or label)")
+        if self.score is not None and math.isnan(self.score):
+            raise ValueError("a score cannot be NaN: it is invalid_output, never a number")
 
