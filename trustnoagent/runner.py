@@ -15,10 +15,12 @@ from evals.cache.store import CacheMiss
 from evals.contract import EvalRecord, EvalResult
 from evals.evaluator import EvaluatorInfo
 from evals.judge_config import JudgeConfig
+from trustnoagent.env import judge_env
 
 Scorer = Callable[[EvaluatorInfo, EvalRecord, JudgeConfig], EvalResult]
 _MAX_MESSAGE = 500  # a provider's error body can be huge; a result should stay readable
 _NO_DIRECTORY = "no cache_dir given and this is not a repo checkout: pass cache_dir="
+_NO_KEY = "live mode needs NVIDIA_API_KEY: export it, or pass JudgeConfig(api_key=...)"
 
 
 def failure(info: EvaluatorInfo, exc: Exception) -> EvalResult:
@@ -40,10 +42,15 @@ def run(
     try:  # nothing a scorer raises escapes: it becomes a status (spec FR-004)
         config = judge or JudgeConfig.from_env()
         directory = cache_dir or location.default_cache_dir(store.CACHE_DIR)
+        missing = next((f for f in sorted(info.requires) if not record.present(f)), None)
         if directory is None:
             result = outcomes.error(info, _NO_DIRECTORY)  # FR-032: never the wheel's own store
-        else:
-            with location.override(directory):
+        elif missing is not None:  # skipped before the key: a missing field needs no credential
+            result = outcomes.skipped(info, missing)
+        elif config.mode == "live" and config.api_key is None:
+            result = outcomes.error(info, _NO_KEY)  # FR-018: named, before any client is built
+        else:  # the config, not the environment, is what every key and client reads (US5)
+            with location.override(directory), judge_env(config):
                 result = scorer(info, record, config)
     except Exception as exc:  # noqa: BLE001 — the point: any failure becomes a result
         result = failure(info, exc)

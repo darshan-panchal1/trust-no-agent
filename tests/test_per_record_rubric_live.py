@@ -1,8 +1,10 @@
 """T041, live half (US4): a rubric call through a socket-free NIM. A judge that never returns
 JSON is `invalid_output` with its text kept and nothing cached; a good reply is cached with real
-tokens and its fingerprint. `CachedJudge` reads the key from the environment until US5."""
+tokens and its fingerprint. The key is carried by the config alone — US5's `judge_env`."""
 
 from __future__ import annotations
+
+from dataclasses import replace
 
 import httpx
 import pytest
@@ -30,9 +32,8 @@ def _chat(content: str) -> MockNim:
 
 
 def _live(monkeypatch: pytest.MonkeyPatch, mock: MockNim) -> EvalResult:
-    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-test")
-    install(monkeypatch, mock)
-    live = JudgeConfig.from_env(mode="live")
+    install(monkeypatch, mock)  # the key travels in the config alone (US5), never via setenv
+    live = replace(JudgeConfig.from_env(mode="live"), api_key="nvapi-test")
     return evaluate(POLITE, RECORD, live, cache_dir=store.CACHE_DIR)
 
 

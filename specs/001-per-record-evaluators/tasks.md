@@ -356,13 +356,22 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Independent test**: T047 passes, and `NVIDIA_API_KEY` is absent from `os.environ` after every test in it.
 
-- [ ] T047 [P] [US5] Write `tests/test_per_record_judge_config.py`:
+- [X] T047 [P] [US5] Write `tests/test_per_record_judge_config.py`:
   - `JudgeConfig(judge_model="other/model", ...)` scoring refusal against a tmp cache seeded only under `other/model` → `ok`, which proves the config, not the env, drives the key;
   - `JudgeConfig.from_env(mode="live")` with no key → `error` naming `NVIDIA_API_KEY`, with no client constructed (monkeypatch `openai.OpenAI` to raise if called);
   - `judge_env` restores `JUDGE_MODEL`, `GENERATOR_MODEL` and `NVIDIA_API_KEY` to their prior state (including absent) after normal exit and after an exception.
-- [ ] T048 [US5] Add `judge_env(config: JudgeConfig)` to `trustnoagent/env.py`. It exports `JUDGE_MODEL` and `GENERATOR_MODEL`, plus `NVIDIA_API_KEY` when `config.api_key` is set, restoring prior values in `finally`, mirroring `model_env`, which stays unchanged.
-- [ ] T049 [US5] In `trustnoagent/evaluators.py`: after resolving `judge`, if `judge.mode == "live"` and `judge.api_key is None`, return `error` naming `NVIDIA_API_KEY` (transition 5). Wrap the registry call in `judge_env(judge)`.
-- [ ] T050 [US5] Run GATE. Confirm `tests/test_provider_credentials.py` stays green, since the key never outlives a call.
+- [X] T048 [US5] Add `judge_env(config: JudgeConfig)` to `trustnoagent/env.py`. It exports `JUDGE_MODEL` and `GENERATOR_MODEL`, plus `NVIDIA_API_KEY` when `config.api_key` is set, restoring prior values in `finally`, mirroring `model_env`, which stays unchanged.
+- [X] T049 [US5] In `trustnoagent/evaluators.py`: after resolving `judge`, if `judge.mode == "live"` and `judge.api_key is None`, return `error` naming `NVIDIA_API_KEY` (transition 5). Wrap the registry call in `judge_env(judge)`.
+- [X] T050 [US5] Run GATE. Confirm `tests/test_provider_credentials.py` stays green, since the key never outlives a call.
+
+**Phase 7 as built (2026-09-26), where it differs from the task text:**
+- **T049 landed in `trustnoagent/runner.py`, not `evaluators.py`.** Since Phase 6 the runner makes the call for built-ins and rubrics alike, so one wrap covers every path. `judge_env(config)` wraps only the scorer call. Every place a key reads the model runs inside it: `build_judge_llm`, `CachedJudge.generate`, `RagasCacheBackend`'s model identity.
+- **The missing-field check moved up into the runner,** using `info.requires`, so data-model transition 4 (skipped) is decided before transition 5 (live without a key). A record missing a field is never told to find a credential. The layer modules keep their own checks; they are now unreachable through the facade but still guard direct callers.
+- **The no-key message:** `live mode needs NVIDIA_API_KEY: export it, or pass JudgeConfig(api_key=...)`. It replaces Phase 5's `KeyError: 'NVIDIA_API_KEY'`, and no client is constructed (T047 asserts this).
+- **`judge_env` leaves `NVIDIA_API_KEY` alone for configs without a key** (offline never builds a client). It is otherwise a copy of `model_env`'s restore discipline; `model_env` is byte-for-byte unchanged.
+- **Tests:** `test_per_record_judge_config.py` (all five built-ins move their key under a hand-built model; no-key error; skip-before-key; environment unchanged afterwards), `test_per_record_judge_config_rubric.py` (the rubric path, including two models' verdicts in one store) and `test_judge_env.py`.
+- **The US3 and US4 live tests no longer `setenv("NVIDIA_API_KEY")`.** The key now travels in the config alone, which those tests prove end to end.
+- **Article XI check:** 5 mutations (config not applied, key check removed, checks reordered, config key not exported, environment not restored). All 5 were caught by the full suite.
 
 ---
 

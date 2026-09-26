@@ -21,7 +21,6 @@ pytestmark = pytest.mark.usefixtures("socket_disabled", "isolated_cache")
 
 
 def _score(monkeypatch: pytest.MonkeyPatch, handler: object) -> EvalResult:
-    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-test")  # the call sites read it until US5
     install(monkeypatch, MockNim(handler))  # type: ignore[arg-type]
     return evaluate("tna.deepeval.refusal_correctness", RECORD, LIVE, cache_dir=store.CACHE_DIR)
 
