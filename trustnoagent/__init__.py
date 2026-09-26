@@ -9,7 +9,7 @@ from evals.contract import EvalRecord, EvalResult, Mode
 from evals.evaluator import EvaluatorInfo
 from evals.judge_config import JudgeConfig
 from evals.ops.run_summary import RunSummary
-from trustnoagent.evaluators import evaluate
+from trustnoagent.evaluators import evaluate, list_evaluators
 from trustnoagent.suite import EvalSuite, run_gate
 from trustnoagent.version import __version__
 
@@ -24,5 +24,6 @@ __all__ = [
     "RunSummary",
     "__version__",
     "evaluate",
+    "list_evaluators",
     "run_gate",
 ]

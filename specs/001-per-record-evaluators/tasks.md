@@ -228,14 +228,23 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Independent test**: T031 passes with all three env vars deleted.
 
-- [ ] T031 [P] [US2] Write `tests/test_per_record_listing.py`:
+- [X] T031 [P] [US2] Write `tests/test_per_record_listing.py`:
   - `list_evaluators()` returns exactly the five ids, sorted, each matching `^tna\.(ragas|deepeval)\.[a-z_]+$`;
   - each `version` equals `f"{trustnoagent.__version__}+ragas@{pin}"` (or `deepeval@{pin}`), where `pin` is parsed from `pyproject.toml` with `tomllib` (`ragas==0.4.3`, `deepeval==4.2.0`);
   - `requires` and `output_type` equal the table in `contracts/public-api.md`;
   - it passes with `JUDGE_MODEL`, `GENERATOR_MODEL` and `NVIDIA_API_KEY` deleted, under `socket_disabled`;
   - `evaluate("tna.ragas.nope", record)` has status `error`, with `evaluator_id` echoed, `evaluator_version == ""` and a message naming the id.
-- [ ] T032 [US2] Add `list_evaluators(*rubrics) -> list[EvaluatorInfo]` to `trustnoagent/evaluators.py`. For now it returns the built-ins sorted by id; rubrics are appended in US4. Also add an unknown-id branch returning `outcomes.error(EvaluatorInfo(id, "", frozenset(), "score"), ...)` before any judge configuration is read. Export it from `trustnoagent/__init__.py`.
-- [ ] T033 [US2] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+- [X] T032 [US2] Add `list_evaluators(*rubrics) -> list[EvaluatorInfo]` to `trustnoagent/evaluators.py`. For now it returns the built-ins sorted by id; rubrics are appended in US4. Also add an unknown-id branch returning `outcomes.error(EvaluatorInfo(id, "", frozenset(), "score"), ...)` before any judge configuration is read. Export it from `trustnoagent/__init__.py`.
+- [X] T033 [US2] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+
+**Phase 4 as built (2026-09-26), where it differs from the task text:**
+- **`list_evaluators()` takes no arguments yet.** T032 wrote `list_evaluators(*rubrics)`. No `RubricJudge` type exists until US4, and a parameter that silently ignored what it was given would let a caller believe a rubric was listed. US4 (T045) widens it to `*rubrics`, which stays backward compatible.
+- **Unknown ids are answered first.** `evaluate()` returns the unknown-id result before reading `JudgeConfig.from_env()`, so a caller with no env vars set is told the real problem. The message lists every known id.
+- **`trustnoagent/results.py` is new.** It holds the layer-free result helpers (`unknown_evaluator`, `no_directory`, `finish`) so `evaluators.py`, the one module that may import both layers, stays under 60 lines. It imports neither layer.
+- **The facade's alias `record_eval as refusal`** replaced `behavior` to keep the registry line within 100 characters.
+- **`evaluate()` now also raises `TypeError` for a non-string evaluator.** US4 widens this to `str | RubricJudge`.
+- **The tests split across two files** (60-line cap): `test_per_record_listing.py` (catalogue, pins, no-env) and `test_per_record_unknown_id.py`.
+- **Added a test T031 did not list**: `trustnoagent.__version__` equals `pyproject.toml`'s `[project] version`. The negative check found that bumping `version.py` alone did not fail the listing test, since both sides read the same file.
 
 ---
 
