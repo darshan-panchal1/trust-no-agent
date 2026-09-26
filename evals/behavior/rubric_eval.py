@@ -30,9 +30,6 @@ def rubric_info(rubric: RubricJudge, release: str) -> EvaluatorInfo:
 def evaluate_rubric(
     rubric: RubricJudge, info: EvaluatorInfo, record: EvalRecord, judge: JudgeConfig
 ) -> EvalResult:
-    missing = next((f for f in sorted(rubric.requires) if not record.present(f)), None)
-    if missing is not None:
-        return outcomes.skipped(info, missing)
     prompt = render_prompt(rubric, record)
     decoding = {"response_format": dict(RESPONSE_FORMAT)}
     template = f"{rubric.id}@{rubric.template_version}"

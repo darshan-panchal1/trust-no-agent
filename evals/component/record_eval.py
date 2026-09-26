@@ -36,10 +36,7 @@ def _score(metric: SingleTurnMetric, record: EvalRecord) -> float:
 def evaluate_ragas(
     name: str, info: EvaluatorInfo, record: EvalRecord, judge: JudgeConfig
 ) -> EvalResult:
-    needs = REQUIRES[name]
-    missing = next((f for f in sorted(needs) if not record.present(f)), None)
-    if missing is not None:
-        return outcomes.skipped(info, missing)
+    needs = REQUIRES[name]  # required fields are checked once, by the runner, for every path
     try:
         metric = build_metric(name, judge.mode)
     except ImportError as exc:  # only `response_relevancy` imports anything, and only when live
@@ -49,6 +46,8 @@ def evaluate_ragas(
     config = config_fingerprint(judge.judge_model, template, decoding, schema)
     fingerprint = result_fingerprint(config, record_hash(record, needs))
     with session.begin(config, f"ragas:{name}") as active:
+        if judge.mode == "live":  # each attempt's real usage, queued for the entry it produces
+            metric.llm.client.on("completion:response", session.push_usage)  # type: ignore[attr-defined]
         try:
             score = _score(metric, record)
         except Exception as exc:  # noqa: BLE001 — judge and fingerprint are known: keep them

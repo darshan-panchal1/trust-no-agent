@@ -74,6 +74,8 @@ fingerprint: str | None = Field(default=None, exclude_if=lambda v: v is None)
 - **Calls are sequential, for all four metrics.** For an `InstructorLLM`, ragas 0.4.3's `PydanticPrompt.generate_multiple` makes one synchronous `generate()` call and ignores `n` (`ragas/prompt/pydantic_prompt.py`). Faithfulness makes its statement and verdict calls one after the other. Context precision loops `for context in retrieved_contexts` (`_context_precision.py:148`), awaiting each call. Every call is sync inside ragas' cacher, with no await between the hook firing and the write, so FIFO pairing is exact even when several judge calls share one `call_kind`.
 - **The old path is untouched.** No session means no hook and no stamping, so `set()` keeps writing 0/0 (FR-037).
 
+**Correction (2026-09-26, Phase 9).** One-at-a-time FIFO pairing is wrong once instructor retries: the hook fires once per *attempt*, but only the final attempt writes an entry. `stamp()` therefore sums every usage queued since the last judge-kind write, then clears the queue. Calls are sequential, so everything queued belongs to the entry being written, retries included, which the provider bills. `tests/test_per_record_ragas_tokens_edges.py` pins this.
+
 **Alternative rejected.** An `httpx` event hook on the OpenAI client. It would need `build_judge_llm` to accept an `http_client`, which is a signature change in a 60-line module, for the same information.
 
 ## R6. How result token totals are computed

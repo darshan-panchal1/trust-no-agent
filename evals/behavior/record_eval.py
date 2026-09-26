@@ -31,9 +31,6 @@ def _measure(metric: GEval, record: EvalRecord) -> tuple[float | None, str | Non
 
 
 def evaluate_refusal(info: EvaluatorInfo, record: EvalRecord, judge: JudgeConfig) -> EvalResult:
-    missing = next((f for f in sorted(REQUIRES) if not record.present(f)), None)
-    if missing is not None:
-        return outcomes.skipped(info, missing)
     metric = build_refusal_correctness_metric(judge.mode)
     decoding = {"response_format": dict(RESPONSE_FORMAT)}
     template = f"{info.id}@{TEMPLATE_VERSION}"

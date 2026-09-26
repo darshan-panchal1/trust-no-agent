@@ -410,13 +410,22 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Independent test**: T054 passes, with the mock transport's call count unchanged on the cached re-run.
 
-- [ ] T054 [P] [US7] Write `tests/test_per_record_ragas_tokens.py`, using `isolated_cache`, `cache_dir=store.CACHE_DIR`, and faithfulness, which needs no embeddings. `MockNim` (`tests/per_record_nim.py`, installed with `install(monkeypatch, ...)`) returns an instructor TOOLS-mode reply chosen by the requested tool name: `StatementGeneratorOutput` → `{"statements":["s1"]}`; the NLI output → one verdict of 1. Each reply carries `usage` 123/45.
+- [X] T054 [P] [US7] Write `tests/test_per_record_ragas_tokens.py`, using `isolated_cache`, `cache_dir=store.CACHE_DIR`, and faithfulness, which needs no embeddings. `MockNim` (`tests/per_record_nim.py`, installed with `install(monkeypatch, ...)`) returns an instructor TOOLS-mode reply chosen by the requested tool name: `StatementGeneratorOutput` → `{"statements":["s1"]}`; the NLI output → one verdict of 1. Each reply carries `usage` 123/45.
   - Live `evaluate("tna.ragas.faithfulness", rec, live_cfg)` → `ok`, `tokens_in == 246`, `tokens_out == 90`, and both written judge entries carry real tokens and a `fingerprint`.
   - Re-running makes no new HTTP calls and returns an equal result.
   - A `RagasCacheBackend("ragas:faithfulness", ..., mode="live").set(...)` outside `evaluate()` still writes 0/0.
   - Confirm the tool names against the pinned ragas before hard-coding them (`ragas/metrics/_faithfulness.py`).
-- [ ] T055 [US7] In `evals/component/record_eval.py`, when `judge.mode == "live"`, register `metric.llm.client.on("completion:response", session.push_usage)` inside the session block, before scoring. The instructor client is the one `build_judge_llm` built (research R5). Nothing changes in `evals/ragas_llm.py`.
-- [ ] T056 [US7] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+- [X] T055 [US7] In `evals/component/record_eval.py`, when `judge.mode == "live"`, register `metric.llm.client.on("completion:response", session.push_usage)` inside the session block, before scoring. The instructor client is the one `build_judge_llm` built (research R5). Nothing changes in `evals/ragas_llm.py`.
+- [X] T056 [US7] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+
+**Phase 9 as built (2026-09-26), where it differs from the task text:**
+- **Pairing sums, it does not pop.** R5 paired each queued usage with the next judge-kind write, one at a time. instructor retries a malformed reply (up to 4 attempts), and the hook fires on every attempt, so a single retry would have billed each later entry with the previous call's tokens. `stamp()` now sums everything queued since the last write, then clears the queue. Calls are strictly sequential, so that is exact, and it bills the retried attempt the provider charged for. The mutation "one-at-a-time pairing (R5 as written)" is caught by `test_a_retried_attempt_is_billed_to_the_entry_it_produced`.
+- **Tool names confirmed against ragas 0.4.3** by probing the request: TOOLS mode with a forced `tool_choice`, `StatementGeneratorOutput` then `NLIStatementOutput`. No sampling parameters are sent (`max_tokens`, `messages`, `model`, `tool_choice`, `tools`).
+- **Different usage per call** (123/45 and 200/60, not the task's 123/45 twice), so a swapped pairing cannot pass by accident. Expected totals are 323/105.
+- **The three layer-level missing-field checks were removed** (component, refusal, rubric). Since Phase 7 the runner checks `info.requires` for every path first, so they were unreachable through `evaluate()`, the only caller. This freed the two lines `record_eval.py` needed at the 60-line cap.
+- **A parametrize id of `live` is silently skipped** by `conftest.py`'s live-test guard, because ids become keywords. The re-run test uses `ids=["rerun_as_live", "rerun_as_offline"]`, with a comment. A suite-wide `-rs` check found no earlier test skipped this way; the only skips are the 2 pre-existing `test_refusal_negative.py` ones.
+- **New helper `tests/per_record_ragas_nim.py`:** a socket-free NIM answering Faithfulness's two tool calls.
+- **Article XI check:** 5 mutations (hook never registered, hook registered offline, one-at-a-time pairing, queue never cleared, usage paired with every kind). All 5 were caught.
 
 ---
 

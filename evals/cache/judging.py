@@ -25,11 +25,15 @@ def observe(key: str, entry: CacheEntry) -> CacheEntry:
 
 
 def stamp(entry: CacheEntry) -> CacheEntry:
-    """Attach the config fingerprint, and the next queued real usage if there is one."""
+    """Attach the config fingerprint and the real usage queued since the last write. Calls are
+    sequential, so everything queued belongs to this entry — including an attempt instructor
+    retried after a malformed reply, which the provider billed and which is summed in here."""
     current = active()
     if current is None or entry.call_kind != current.judge_call_kind:
         return entry
     update: dict[str, object] = {"fingerprint": current.fingerprint}
     if current.pending_usage:
-        update["input_tokens"], update["output_tokens"] = current.pending_usage.popleft()
+        update["input_tokens"] = sum(prompt for prompt, _ in current.pending_usage)
+        update["output_tokens"] = sum(completion for _, completion in current.pending_usage)
+        current.pending_usage.clear()
     return entry.model_copy(update=update)
