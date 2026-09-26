@@ -1,0 +1,156 @@
+{
+  "$defs": {
+    "CostRow": {
+      "description": "One `call_kind`'s totals: `generate:v1_naive`, `ragas:faithfulness`, \u2026",
+      "properties": {
+        "cached": {
+          "default": 0,
+          "title": "Cached",
+          "type": "integer"
+        },
+        "call_kind": {
+          "title": "Call Kind",
+          "type": "string"
+        },
+        "calls": {
+          "default": 0,
+          "title": "Calls",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0.0,
+          "title": "Usd"
+        }
+      },
+      "required": [
+        "call_kind"
+      ],
+      "title": "CostRow",
+      "type": "object"
+    },
+    "MetricRow": {
+      "description": "`threshold=None` marks a diagnostic-only metric \u2014 Article IV names three gates;\nthe rest are scored but never gate anything.",
+      "properties": {
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold"
+        },
+        "v1_mean": {
+          "title": "V1 Mean",
+          "type": "number"
+        },
+        "v2_mean": {
+          "title": "V2 Mean",
+          "type": "number"
+        }
+      },
+      "required": [
+        "metric",
+        "v1_mean",
+        "v2_mean"
+      ],
+      "title": "MetricRow",
+      "type": "object"
+    },
+    "Regression": {
+      "description": "One bad case with the text that produced it. FR-042: the answer is the load-bearing\nfield \u2014 a confident, fluent, wrong answer sitting next to the score that caught it.",
+      "properties": {
+        "answer": {
+          "title": "Answer",
+          "type": "string"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        },
+        "variant": {
+          "title": "Variant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "metric",
+        "question",
+        "variant",
+        "score",
+        "answer"
+      ],
+      "title": "Regression",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "costs": {
+      "items": {
+        "$ref": "#/$defs/CostRow"
+      },
+      "title": "Costs",
+      "type": "array"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "metrics": {
+      "items": {
+        "$ref": "#/$defs/MetricRow"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "worst_regressions": {
+      "items": {
+        "$ref": "#/$defs/Regression"
+      },
+      "title": "Worst Regressions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generated_at",
+    "metrics",
+    "worst_regressions",
+    "costs"
+  ],
+  "title": "RunSummary",
+  "type": "object"
+}

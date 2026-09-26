@@ -47,36 +47,36 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 ### Tests first
 
-- [ ] T003 [P] **Guard.** Write `tests/test_v1_compat.py`, which must pass immediately:
+- [X] T003 [P] **Guard.** Write `tests/test_v1_compat.py`, which must pass immediately:
   - (a) Every file in `evals/.judge_cache/` round-trips byte-identically: `CacheEntry.model_validate_json(t).model_dump_json() == t`. Assert the file count is ≥1120 and equals the number checked.
   - (b) `make_key("ragas:faithfulness", "m", "p")` equals a golden hex string. Compute it once, now, and paste it in as a literal.
-- [ ] T004 [P] **Guard.** Write `tests/test_v1_compat_summary.py`, which must pass immediately:
+- [X] T004 [P] **Guard.** Write `tests/test_v1_compat_summary.py`, which must pass immediately:
   - (a) `RunSummary.model_json_schema()` equals `tests/snapshots/run_summary_schema.json`. Generate that snapshot now, from the unchanged code, with `json.dumps(..., indent=2, sort_keys=True)`.
   - (b) Offline `evals.ops.summary.build_summary()`, bracketed by `cost.reset()`, raises no `CacheMiss`, and every `cost.rows()` row has `cached == calls`.
   - Use `socket_disabled`. Unlike existing fixtures, this **fails** on a miss rather than skipping.
-- [ ] T005 [P] Write `tests/test_contract_types.py` for `evals/contract.py`:
+- [X] T005 [P] Write `tests/test_contract_types.py` for `evals/contract.py`:
   - `EvalRecord` is frozen, its fields default to `None`, and `metadata` defaults to empty;
   - an empty string or empty tuple counts as present;
   - `EvalResult` equality ignores `latency_ms` (`field(compare=False)`);
   - `get_args(Status) == ("ok","error","skipped","invalid_output")`, and likewise for `OutputType`, `Provenance` and `RecordField`;
   - `trustnoagent.Mode is evals.contract.Mode`.
-- [ ] T006 [P] Write `tests/test_judge_config.py` for `evals/judge_config.py`:
+- [X] T006 [P] Write `tests/test_judge_config.py` for `evals/judge_config.py`:
   - `from_env()` returns the pytest-env models, `mode="offline"` and `api_key=None`;
   - with `JUDGE_MODEL` deleted (`monkeypatch.delenv`), it raises the existing `RuntimeError` whose message names `JUDGE_MODEL`, and the same for `GENERATOR_MODEL`;
   - `from_env(mode="live")` with `NVIDIA_API_KEY` set via monkeypatch returns it, and with it unset returns `None` without raising;
   - with `monkeypatch.setenv("NIM_BASE_URL", "http://evil")`, `base_url == evals.models.NIM_BASE_URL`;
   - `"nvapi" not in repr(JudgeConfig(..., api_key="nvapi-x"))`.
-- [ ] T007 [P] Write `tests/test_fingerprint.py` for `evals/fingerprint.py`:
+- [X] T007 [P] Write `tests/test_fingerprint.py` for `evals/fingerprint.py`:
   - `canonical_json` is independent of dict key order;
   - `config_fingerprint(judge_model, template, decoding, schema)` is deterministic and changes when any one argument changes;
   - `result_fingerprint(cfg, prompt_hash) == sha256(f"{cfg}:{prompt_hash}")`;
   - a `decoding` dict containing `temperature`, `top_p` or `top_k` raises `ValueError` (Article III).
-- [ ] T008 [P] Write `tests/test_cache_location.py` for `evals/cache/location.py` and the store hook:
+- [X] T008 [P] Write `tests/test_cache_location.py` for `evals/cache/location.py` and the store hook:
   - `default_cache_dir(store.CACHE_DIR)` returns `CACHE_DIR` in this checkout;
   - `default_cache_dir(tmp_path / "evals" / ".judge_cache")` returns `None`;
   - `with location.override(tmp_path):` makes `store.read_or_raise(key)` read a file written into `tmp_path`, and a miss names a path under `tmp_path`;
   - the override is restored after the block, including when the block raises.
-- [ ] T009 [P] Write `tests/test_cache_session.py` for `evals/cache/session.py`. Use `isolated_cache` and exercise writes **only** through `RagasCacheBackend(..., mode="live").set/get` (rule 4).
+- [X] T009 [P] Write `tests/test_cache_session.py` for `evals/cache/session.py`. Use `isolated_cache` and exercise writes **only** through `RagasCacheBackend(..., mode="live").set/get` (rule 4).
   - With no session, a written entry's JSON has no `"fingerprint"` key and keeps 0/0 tokens.
   - Inside `session.begin(fingerprint="F", judge_call_kind="ragas:faithfulness")`:
     - a write to `ragas:faithfulness` carries `"fingerprint":"F"`;
@@ -89,27 +89,27 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 ### Implementation
 
-- [ ] T010 [P] Create `evals/contract.py`:
+- [X] T010 [P] Create `evals/contract.py`:
   - literals `Status`, `OutputType`, `Provenance`, `RecordField` and `Mode = Literal["offline","live"]`;
   - frozen dataclasses `EvalRecord`, `EvalResult` (per data-model.md; `latency_ms` with `compare=False`; `raw: Mapping[str, object]`) and `EvaluatorInfo`;
   - the `Evaluator` `typing.Protocol` (sync `evaluate(record, judge) -> EvalResult`), with `JudgeConfig` referenced under `TYPE_CHECKING`.
   - It imports stdlib only.
   - Then change `trustnoagent/suite.py` line 23 to `from evals.contract import Mode` (same object, no behaviour change; this avoids a circular import from the adapters).
-- [ ] T011 [P] Create `evals/judge_config.py`:
+- [X] T011 [P] Create `evals/judge_config.py`:
   - a frozen `JudgeConfig(judge_model, generator_model, mode="offline", api_key=field(default=None, repr=False), base_url=NIM_BASE_URL)`;
   - `from_env(mode="offline")`, which calls `evals.models.judge_model()` and `generator_model()`, and reads `os.environ.get("NVIDIA_API_KEY")` only when `mode == "live"`.
-- [ ] T012 [P] Create `evals/fingerprint.py` with:
+- [X] T012 [P] Create `evals/fingerprint.py` with:
   - `canonical_json(obj) -> str` (`sort_keys`, `separators=(",",":")`);
   - `config_fingerprint(judge_model, template, decoding, schema) -> str`, which rejects sampling keys;
   - `result_fingerprint(config_fp, prompt_hash) -> str`;
   - `record_hash(record, fields) -> str`, meaning `hash_prompt(canonical_json(...))` of the named fields, with contexts as a list.
-- [ ] T013 [P] Create `evals/cache/location.py`:
+- [X] T013 [P] Create `evals/cache/location.py`:
   - a module-level `_override: Path | None`;
   - `current() -> Path | None`;
   - an `override(path)` context manager that restores in `finally`;
   - `default_cache_dir(committed: Path) -> Path | None`, which returns `committed` only when `committed.parents[1]` contains both `.git` (file or directory) and `pyproject.toml`.
   - It does not import `store`.
-- [ ] T014 [P] Create `evals/cache/session.py`:
+- [X] T014 [P] Create `evals/cache/session.py`:
   - `FingerprintMismatch(RuntimeError)`, carrying `key`, `stored`, `expected` and the stored `response`;
   - a dataclass `_Session(fingerprint, judge_call_kind, pending_usage: deque[tuple[int,int]], served: dict[str, CacheEntry])`;
   - `begin(fingerprint, judge_call_kind)` as a context manager: it raises if a session is already active, and clears in `finally`;
@@ -118,7 +118,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
   - `observe(key, entry) -> entry`, which raises on a stored-fingerprint mismatch for judge-kind entries and records judge-kind entries in `served`;
   - `stamp(entry) -> entry`, which for the judge kind returns `entry.model_copy(update=...)` with the fingerprint and the next pending usage, if any.
   - Every function is a no-op passthrough when no session is active. Import `CacheEntry` only under `TYPE_CHECKING`, to avoid a cycle.
-- [ ] T015 Change `evals/cache/store.py`, keeping it at 60 lines or fewer:
+- [X] T015 Change `evals/cache/store.py`, keeping it at 60 lines or fewer:
   - add `fingerprint: str | None = Field(default=None, exclude_if=lambda v: v is None)` to `CacheEntry`;
   - add `from evals.cache import location, session`;
   - in both functions, set `path = (location.current() or CACHE_DIR) / f"{key}.json"`;
@@ -126,7 +126,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
   - in `read_or_call`, set `entry = session.stamp(call_fn())`, call `path.parent.mkdir(...)` instead of `CACHE_DIR.mkdir(...)`, and `return _record(session.observe(key, entry), cached=False)`.
   - `read_or_raise`'s signature stays `(key)`.
   - T003, T008 and T009 must now be green.
-- [ ] T016 Create `evals/outcomes.py`, which imports no framework. Split into `evals/outcomes_tokens.py` if it nears 60 lines, and add that name to `CONTRACT_MODULES` in `tests/test_article_ii_facade.py`. It provides these builders:
+- [X] T016 Create `evals/outcomes.py`, which imports no framework. Split into `evals/outcomes_tokens.py` if it nears 60 lines, and add that name to `CONTRACT_MODULES` in `tests/test_article_ii_facade.py`. It provides these builders:
   - `skipped(info, missing)` and `error(info, message, judge=None, fingerprint=None)`;
   - `invalid(info, message, raw_text, judge, fingerprint)`;
   - `ok(info, *, score=None, label=None, explanation=None, judge, fingerprint, served)`:
@@ -135,10 +135,19 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
     - it sets `raw` to `{"cache_keys": sorted(served), "responses": [...]}`;
     - it turns a NaN score into `invalid`.
   - `latency_ms` defaults to 0; the facade sets it.
-- [ ] T017 Create `tests/per_record_support.py` (not collected, no `test_` prefix, never imports both layers):
+- [X] T017 Create `tests/per_record_support.py` (not collected, no `test_` prefix, never imports both layers):
   - `golden_record(variant, index) -> tuple[GoldenCase, EvalRecord]`, built from `load_golden()` and `app.v1_naive`/`app.v2_fixed` `answer(q, mode="offline")`, with `contexts=tuple(c.text for c in result.retrieved_contexts)` and `expected=case.ground_truth`;
   - `mock_nim(handler) -> Callable[..., openai.OpenAI]`, a factory producing a real `openai.OpenAI` with `http_client=httpx.Client(transport=httpx.MockTransport(handler))`, which keeps a call counter.
-- [ ] T018 Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`). T003–T009 are green; T003 and T004 were never red.
+- [X] T018 Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`). T003–T009 are green; T003 and T004 were never red.
+
+**Phase 2 as built (2026-09-26), where it differs from the task text:**
+- `EvaluatorInfo` and the `Evaluator` protocol live in `evals/evaluator.py`, split from `evals/contract.py` for the 60-line cap. Both are framework-free and listed in `CONTRACT_MODULES` and Article II.c.
+- The store's hooks `observe`/`stamp` live in `evals/cache/judging.py`; `evals/cache/session.py` keeps the state, `begin()`, `active()` and `push_usage`. There is no `session.current()`: use the session `begin()` yields.
+- `read_or_call`'s hit branch delegates to `read_or_raise` (same read, record and observe), which keeps `store.py` at 60 lines.
+- `trustnoagent/__init__.py` imports `Mode` from `evals.contract`. Ruff's PLC0414 rejects the `as Mode` re-export idiom in `suite.py`. `trustnoagent.suite.Mode` still resolves at runtime.
+- T017's helper is the `MockNim` class, installed with `monkeypatch.setattr(openai, "OpenAI", MockNim(handler))`. It exposes `.calls`.
+- `tests/test_outcomes.py` was added so T016 had its tests first.
+- T004's cost check measures a before/after delta instead of resetting `cost`, which would have erased earlier tests' rows from Article VIII's end-of-run table.
 
 **Checkpoint**: contract types, configuration, fingerprints and the store hooks exist. With no session and no override active, the store is byte-for-byte v1.0.0 (T003 and T009 prove it).
 
@@ -179,7 +188,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
     - `metric = build_metric(name, judge.mode)`;
     - `cfg = config_fingerprint(judge.judge_model, f"tna.ragas.{name}@{TEMPLATE_VERSION}", dict(metric.llm.model_args), f"{LIB}:{type(metric).__name__}")`;
     - `with session.begin(cfg, f"ragas:{name}"): score = metric.single_turn_score(record_to_sample(record))`;
-    - `outcomes.ok(...)` with `result_fingerprint(cfg, record_hash(record, REQUIRES[name]))` and `session.current().served` captured before exit.
+    - `outcomes.ok(...)` with `result_fingerprint(cfg, record_hash(record, REQUIRES[name]))` and the `served` map of the session `begin()` yields, captured before exit.
   - **If T019 shows cache misses**, the prompt shape differs from the v1 path. Switch the scoring call to `evaluate(EvaluationDataset(samples=[sample]), metrics=[metric], raise_exceptions=True, show_progress=False)`, the exact call shape `evals/ops/ragas_means.py` uses, and read `result[name][0]`.
 - [ ] T027 [US1] Create `evals/behavior/record_eval.py`, which is deepeval-only.
   - Export `LIB = f"deepeval@{deepeval.__version__}"`, `TEMPLATE_VERSION = "refusal-steps/1"` and `REQUIRES = {input, output, expected}`.

@@ -5,8 +5,9 @@ real internal layout (facade, not a rename) — see the packaging plan for why.
 
 from __future__ import annotations
 
+from evals.contract import Mode
 from evals.ops.run_summary import RunSummary
-from trustnoagent.suite import EvalSuite, Mode, run_gate
+from trustnoagent.suite import EvalSuite, run_gate
 
 __version__ = "1.1.0"
 

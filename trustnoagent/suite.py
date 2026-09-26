@@ -10,8 +10,8 @@ one provider — the env-var selection Article X blesses, not a provider abstrac
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
 
+from evals.contract import Mode
 from evals.golden.load import load_golden
 from evals.golden.schema import GoldenCase
 from evals.ops.report import write_reports
@@ -19,8 +19,6 @@ from evals.ops.run_summary import RunSummary
 from evals.ops.summary import build_summary
 from trustnoagent.env import model_env
 from trustnoagent.gate import failing_metrics
-
-Mode = Literal["offline", "live"]
 
 
 class EvalSuite:

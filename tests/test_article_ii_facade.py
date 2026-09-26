@@ -12,6 +12,7 @@ FACADE = "trustnoagent/evaluators.py"
 PRE_EXISTING = {"evals/ops/coverage.py", "evals/ops/record.py"}
 CONTRACT_MODULES = {
     "evals/contract.py",
+    "evals/evaluator.py",
     "evals/judge_config.py",
     "evals/fingerprint.py",
     "evals/outcomes.py",
