@@ -33,7 +33,7 @@ def test_no_exception_escapes_and_no_state_leaks(
     result = evaluate(ID, EvalRecord(input="q", output="a", contexts=("c",)))
     assert result.status == "error" and result.error
     assert (result.score, result.label) == (None, None)
-    assert type(exc).__name__ in result.error or isinstance(exc, CacheMiss)
+    assert type(exc).__name__ in result.error or isinstance(exc, (CacheMiss, FingerprintMismatch))
     assert location.current() is None
     monkeypatch.undo()  # a session that leaked would make this healthy call raise "nest"
     assert evaluate(ID, golden_record("v2_fixed", 0)[1]).status == "ok"

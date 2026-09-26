@@ -11,27 +11,15 @@ from pathlib import Path
 
 from evals import outcomes
 from evals.cache import location, store
-from evals.cache.store import CacheMiss
 from evals.contract import EvalRecord, EvalResult
 from evals.evaluator import EvaluatorInfo
+from evals.failures import failed
 from evals.judge_config import JudgeConfig
 from trustnoagent.env import judge_env
 
 Scorer = Callable[[EvaluatorInfo, EvalRecord, JudgeConfig], EvalResult]
-_MAX_MESSAGE = 500  # a provider's error body can be huge; a result should stay readable
 _NO_DIRECTORY = "no cache_dir given and this is not a repo checkout: pass cache_dir="
 _NO_KEY = "live mode needs NVIDIA_API_KEY: export it, or pass JudgeConfig(api_key=...)"
-
-
-def failure(info: EvaluatorInfo, exc: Exception) -> EvalResult:
-    """A cache miss says what to do for a caller's own record — `record` only refreshes the
-    built-in set, so the store's own refresh advice would be wrong here."""
-    if isinstance(exc, CacheMiss):
-        key = str(exc).split(" — ")[0]
-        message = f"{key}: no committed evidence covers this record; score it in live mode"
-    else:
-        message = f"{type(exc).__name__}: {exc}"
-    return outcomes.error(info, message[:_MAX_MESSAGE])
 
 
 def run(
@@ -53,6 +41,6 @@ def run(
             with location.override(directory), judge_env(config):
                 result = scorer(info, record, config)
     except Exception as exc:  # noqa: BLE001 — the point: any failure becomes a result
-        result = failure(info, exc)
+        result = failed(info, exc)  # the config may never have been reached: no judge here
     raw = {**result.raw, "metadata": dict(record.metadata)} if record.metadata else result.raw
     return replace(result, raw=raw, latency_ms=round((time.monotonic() - started) * 1000))

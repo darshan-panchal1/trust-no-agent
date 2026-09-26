@@ -14,6 +14,7 @@ from evals.component.matrix import build_metric
 from evals.component.record_failure import unusable_reply
 from evals.contract import EvalRecord, EvalResult, RecordField
 from evals.evaluator import EvaluatorInfo
+from evals.failures import failed
 from evals.fingerprint import config_fingerprint, record_hash, result_fingerprint
 from evals.judge_config import JudgeConfig
 
@@ -50,9 +51,9 @@ def evaluate_ragas(
     with session.begin(config, f"ragas:{name}") as active:
         try:
             score = _score(metric, record)
-        except Exception as exc:  # re-raised unless the judge's reply itself was unusable
+        except Exception as exc:  # noqa: BLE001 — judge and fingerprint are known: keep them
             if (text := unusable_reply(exc)) is None:
-                raise
+                return failed(info, exc, judge.judge_model, fingerprint)
             message = f"the judge's reply could not be used ({type(exc).__name__})"
             return outcomes.invalid(info, message, text, judge.judge_model, fingerprint)
         return outcomes.ok(info, score=score, judge_model=judge.judge_model,

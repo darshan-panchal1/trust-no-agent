@@ -14,6 +14,7 @@ from evals.cache import session
 from evals.cache.keys import hash_prompt
 from evals.contract import EvalRecord, EvalResult
 from evals.evaluator import EvaluatorInfo
+from evals.failures import failed
 from evals.fingerprint import config_fingerprint, result_fingerprint
 from evals.judge import build_rubric_judge
 from evals.judge.json_completion import RESPONSE_FORMAT
@@ -43,6 +44,8 @@ def evaluate_rubric(
         except json.JSONDecodeError as exc:  # json_completion gave up after its one retry
             reason = "the judge never replied with JSON"
             return outcomes.invalid(info, reason, exc.doc, judge.judge_model, fingerprint)
+        except Exception as exc:  # noqa: BLE001 — judge and fingerprint are known: keep them
+            return failed(info, exc, judge.judge_model, fingerprint)
         try:
             verdict = verdict_model(rubric).model_validate_json(text)
         except ValidationError as exc:

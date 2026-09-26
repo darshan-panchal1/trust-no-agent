@@ -45,3 +45,12 @@ def install(monkeypatch: pytest.MonkeyPatch, mock: MockNim) -> None:
     shim = SimpleNamespace(OpenAI=mock)
     for module in (evals.ragas_llm, evals.judge.cached, app.generate):
         monkeypatch.setattr(module, "openai", shim)
+
+
+def chat(content: str) -> Callable[[httpx.Request], httpx.Response]:
+    """A handler replying with one plain chat completion (5 prompt / 2 completion tokens)."""
+    body = {"id": "x", "object": "chat.completion", "created": 0, "model": "m",
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": content}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7}}
+    return lambda _request: httpx.Response(200, json=body)

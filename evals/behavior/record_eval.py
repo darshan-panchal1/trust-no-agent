@@ -14,6 +14,7 @@ from evals.behavior.refusal import build_refusal_correctness_metric
 from evals.cache import session
 from evals.contract import EvalRecord, EvalResult, RecordField
 from evals.evaluator import EvaluatorInfo
+from evals.failures import failed
 from evals.fingerprint import config_fingerprint, record_hash, result_fingerprint
 from evals.judge.json_completion import RESPONSE_FORMAT
 from evals.judge_config import JudgeConfig
@@ -41,9 +42,9 @@ def evaluate_refusal(info: EvaluatorInfo, record: EvalRecord, judge: JudgeConfig
     with session.begin(config, _CALL_KIND) as active:
         try:
             score, reason = _measure(metric, record)
-        except (KeyError, ValueError) as exc:  # JSONDecodeError is a ValueError
+        except Exception as exc:  # noqa: BLE001 — judge and fingerprint are known: keep them
             if (text := unusable_reply(exc, active.served)) is None:
-                raise
+                return failed(info, exc, judge.judge_model, fingerprint)
             message = f"the judge's reply could not be used ({type(exc).__name__})"
             return outcomes.invalid(info, message, text, judge.judge_model, fingerprint)
         return outcomes.ok(info, score=score, explanation=reason, judge_model=judge.judge_model,

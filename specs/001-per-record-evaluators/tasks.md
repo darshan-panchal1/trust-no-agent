@@ -381,14 +381,26 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Independent test**: T051 passes, and the committed cache is unchanged (`git status evals/.judge_cache` is clean).
 
-- [ ] T051 [P] [US6] Write `tests/test_per_record_fingerprint.py`, using `isolated_cache`, `cache_dir=store.CACHE_DIR` and a `MockNim` from `tests/per_record_nim.py` installed with `install(monkeypatch, MockNim(handler))` with a `JudgeConfig(mode="live", api_key="nvapi-test")`.
+- [X] T051 [P] [US6] Write `tests/test_per_record_fingerprint.py`, using `isolated_cache`, `cache_dir=store.CACHE_DIR` and a `MockNim` from `tests/per_record_nim.py` installed with `install(monkeypatch, MockNim(handler))` with a `JudgeConfig(mode="live", api_key="nvapi-test")`.
   - A live refusal call writes an entry whose JSON contains `"fingerprint"`.
   - An offline re-run returns an equal result with `fingerprint_provenance == "recorded"`.
   - Rewriting that file's `"fingerprint"` to `"0"*64`, then re-running, gives `error` whose message contains both the stored and the expected value, with the stored text in `raw["responses"]`.
   - Changing `judge_model` changes `judge_fingerprint`.
   - An old-path `CachedJudge(...).generate` live write under no session has no `"fingerprint"` key.
-- [ ] T052 [US6] In `trustnoagent/evaluators.py`, map `FingerprintMismatch` to `error`: `f"stored fingerprint {stored} != current {expected} for {key}"`, with `raw={"responses":[exc.response], "cache_keys":[exc.key]}`. Place it before the generic `Exception` branch.
-- [ ] T053 [US6] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+- [X] T052 [US6] In `trustnoagent/evaluators.py`, map `FingerprintMismatch` to `error`: `f"stored fingerprint {stored} != current {expected} for {key}"`, with `raw={"responses":[exc.response], "cache_keys":[exc.key]}`. Place it before the generic `Exception` branch.
+- [X] T053 [US6] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+
+**Phase 8 as built (2026-09-26), where it differs from the task text:**
+- **Most of US6 already worked; this phase proved it and closed two gaps.** Phase 2's session stamps, reads back as `recorded`, keys by model and serves legacy entries, so 8 of T051's 10 new tests passed on arrival and stay as guards. Two failed for real reasons:
+  - a mismatch result had an empty `raw` (T052);
+  - **every error raised inside a judging session lost its `judge_model` and `judge_fingerprint`.** The exception escaped to the runner's safety net, which knows neither. The data model says `judge_fingerprint` is `None` only when no configuration was reached, and US6 says every result carries one.
+- **`evals/failures.py` is new.** It is the one exception-to-result mapping, shared by the three layer evaluators (which pass the judge and fingerprint they know) and the runner's safety net (which does not). It replaces `runner.failure`. It is framework-free and listed in `CONTRACT_MODULES` and Article II.c. T052 therefore landed there, not in `evaluators.py`.
+- **The three layer modules now return `failed(...)`** for any exception that is not an unusable judge reply, instead of re-raising. Each such catch carries an explained `noqa: BLE001`. The runner's safety net still covers anything before a layer knows its fingerprint.
+- **Mismatch message:** T052's wording, plus `; this evidence was judged under another configuration: re-score it live`. `raw` is `{"responses": [stored reply], "cache_keys": [key]}`.
+- **Phase 5's escape test now exempts `FingerprintMismatch`** from its "class name in the message" assertion, as it already exempted `CacheMiss`; the documented wording has no class prefix. Its status, verdict and no-leak checks still apply.
+- **Tests beyond T051:** `test_per_record_fingerprint_legacy.py` (all five built-ins serve committed pre-1.1 evidence as `not_recorded`, with the served files confirmed fingerprint-free on disk; errors keep their judge; the old path writes no fingerprint) and `test_per_record_fingerprint_tamper.py` (a copy of the committed store, tampered on exactly the served entries, is refused by all five built-ins and by the rubric path).
+- **`tests/per_record_nim.py` gained `chat(content)`,** one shared chat-completion handler.
+- **Article XI check:** 6 mutations (mismatch check off, legacy entries refused, writes unstamped, refused reply dropped, layer drops the fingerprint, provenance always `recorded`). All 6 were caught; "legacy entries refused" alone fails 62 tests.
 
 ---
 
