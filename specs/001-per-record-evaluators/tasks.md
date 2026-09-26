@@ -433,14 +433,14 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Purpose**: the hand-run live pass, docs, the `compat.yml` workflow, and the two final regression runs.
 
-- [ ] T057 [P] Create `trustnoagent/live_check.py`, a hand-run live pass that is never run by pytest or CI and has no `__main__` block. Run with `uv run python -c "from trustnoagent.live_check import main; main()"`. `main()`:
+- [X] T057 [P] Create `trustnoagent/live_check.py`, a hand-run live pass that is never run by pytest or CI and has no `__main__` block. Run with `uv run python -c "from trustnoagent.live_check import main; main()"`. `main()`:
   - requires `NVIDIA_API_KEY` (a clear `SystemExit` if absent);
   - scores one fresh record with all five built-ins plus one sample label rubric, using `JudgeConfig.from_env(mode="live")` and a `tempfile.mkdtemp()` `cache_dir`;
   - prints id, status, score or label, tokens and fingerprint;
   - re-runs and asserts the second pass made no uncached calls (via `cost.rows()`).
   - The docstring states the `uv sync --group calibration` prerequisite for `response_relevancy`.
-- [ ] T058 [P] Add a "Per-record evaluation (v1.1.0)" section to `README.md` **after** the first code block and **below** `## Maintaining this repo`, so `tests/test_ci_config.py`'s README checks hold. It holds the `contracts/public-api.md` example and the five-row catalogue.
-- [ ] T059 [P] Create `.github/workflows/compat.yml`, triggered on `pull_request`, with `permissions: contents: read` and **no credential of any kind** (`tests/test_ci_config.py` checks every workflow). One job:
+- [X] T058 [P] Add a "Per-record evaluation (v1.1.0)" section to `README.md` **after** the first code block and **below** `## Maintaining this repo`, so `tests/test_ci_config.py`'s README checks hold. It holds the `contracts/public-api.md` example and the five-row catalogue.
+- [X] T059 [P] Create `.github/workflows/compat.yml`, triggered on `pull_request`, with `permissions: contents: read` and **no credential of any kind** (`tests/test_ci_config.py` checks every workflow). One job:
   1. `actions/checkout@v4` with `fetch-depth: 0`, then `astral-sh/setup-uv@v5`.
   2. Create `git worktree add ../base v1.0.0` and `../head HEAD`, and run `uv sync --frozen` in each.
   3. Set env: the committed `JUDGE_MODEL`/`GENERATOR_MODEL` values, `DEEPEVAL_TELEMETRY_OPT_OUT=YES`, `RAGAS_DO_NOT_TRACK=true`, `DEEPEVAL_DISABLE_DOTENV=1`.
@@ -453,8 +453,8 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
   6. In each worktree, run `uv run python -m evals.cli calibrate && git diff --exit-code evals/thresholds.yaml`.
   7. `diff -u /tmp/base.txt /tmp/head.txt && diff -ru /tmp/base-report /tmp/head-report`.
   - Replace `report`'s printed paths (which differ by side) with a fixed placeholder via `sed` before diffing, and note why in a YAML comment.
-- [ ] T060 Run GATE. It must stay green with `compat.yml` present, which proves `tests/test_ci_config.py` accepts it.
-- [ ] T061 **Final: cache re-serialisation.** Run `uv run pytest tests/test_v1_compat.py tests/test_v1_compat_summary.py -v` and confirm:
+- [X] T060 Run GATE. It must stay green with `compat.yml` present, which proves `tests/test_ci_config.py` accepts it.
+- [X] T061 **Final: cache re-serialisation.** Run `uv run pytest tests/test_v1_compat.py tests/test_v1_compat_summary.py -v` and confirm:
   - every one of the ≥1,120 committed entries re-serialises byte-identically;
   - the `make_key` golden hash holds;
   - the `RunSummary` schema matches its snapshot;
@@ -469,6 +469,20 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
   - no module over 60 lines;
   - a negative test exists for all five built-ins and the rubric;
   - `tests/test_harness_integrity.py` passes.
+
+**Phase 10 as built, T057–T061 (2026-09-26). Stopped before T062 as instructed; T063/T064 follow it and are left unmarked.**
+- **T057, live pass, run for real** against `nvidia/nemotron-3-super-120b-a12b`: 12m47s, 16 uncached calls, then a re-run with 0 uncached calls and identical results. Only `NVIDIA_API_KEY` was read from `.env`; the models were set to the committed value, and the key was confirmed absent from all output. It scores two records, not one: a faithful answer and a known-bad one, so a real judge's discrimination is visible. Results are in quickstart §7.
+  - **The rubric judge replied `{}` for the known-bad record.** This is `json_object` mode's documented failure: valid JSON, no fields. The path reported `invalid_output` with the `{}` kept, as designed. But it means a real rubric judge was *not* shown reaching `fail`; `nvext.guided_json` (R18) is the fix to evaluate.
+  - **Faithfulness scored the faithful answer 0.5, not 1.0,** while still separating it from the bad one (0.0). That is judge quality, not a path defect.
+  - **`invalid_output` results report `tokens=None`,** although that call's real usage (157/255) was recorded on its evidence entry and in the cost table. `outcomes.invalid` does not read served entries. This is a small gap against FR-033, not fixed here.
+  - **One NIM request stalled about 10 minutes** before the openai client's 600 s default timeout retried it successfully.
+  - ResponseRelevancy logs "1 generations instead of requested 3", the same as the v1 path: `InstructorLLM` ignores `n` (research R5).
+  - The pass needed `uv sync --frozen --group calibration`. It was installed for the run and then removed with `uv sync --frozen`. While it was installed, `tests/test_embeddings.py` failed as designed (Article IX: that group must be absent on a default install), and passed again after removal. `uv.lock`/`pyproject.toml` were never changed.
+  - `tests/test_live_check.py` (offline) checks that it refuses to start without a key, and that its records satisfy every evaluator it runs.
+- **T058:** the README section sits after "Maintaining this repo". Its example was executed in a bare process with no key and no network: every call returns a status and nothing raises.
+- **T059, `compat.yml`, fixed against its task text:** it diffs stdout and exit codes only. stderr carries warnings with each worktree's absolute path and is kept out of the diff. The step uses `set +e`, because GitHub's `bash -e` would abort at the first non-zero exit before any diff ran. Report paths are normalised per side. It has not been run yet: that is T062.
+- **T061:** 1120/1120 committed entries re-serialise byte-for-byte, and 1120/1120 are byte-identical to the branch point. The `evals/.judge_cache` git tree hash is `a79f0632…` at `v1.0.0`, at the branch point and at HEAD. There are 0 committed changes and 0 working-tree changes, untracked files included.
+- **T063 work already applied** (the task stays unmarked): two quickstart selectors, `-k "per_record and reproduces_v1"` and `-k "per_record and live_mechanics"`, selected **zero** tests. They are replaced with explicit file lists (28 and 16 tests). §3/§4 were confirmed at 40 and 39 tests. `spec.md` Status is not yet updated.
 
 ---
 
