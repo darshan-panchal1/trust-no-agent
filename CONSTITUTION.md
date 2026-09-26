@@ -175,7 +175,7 @@ The per-record evaluator contract (`specs/001-per-record-evaluators/`) lets a ca
 - **It imports no framework.** It imports the per-layer evaluator modules under `evals/component/` and `evals/behavior/`, and framework-free contract modules. It never imports `ragas` or `deepeval` itself.
 - **Each per-layer evaluator module still speaks to exactly one framework**, and Article II's no-edge rule between `evals/component/` and `evals/behavior/` is untouched.
 - **Shared types are framework-free, and nothing inherits across the line.**
-  - The contract modules are `evals/contract.py` (`EvalRecord`, `EvalResult`), `evals/evaluator.py` (the `Evaluator` protocol), `evals/judge_config.py`, `evals/fingerprint.py`, `evals/outcomes.py` and `evals/rubric.py`. They import neither framework.
+  - The contract modules are `evals/contract.py` (`EvalRecord`, `EvalResult`), `evals/evaluator.py` (the `Evaluator` protocol), `evals/judge_config.py`, `evals/fingerprint.py`, `evals/outcomes.py`, `evals/rubric.py` and `evals/rubric_verdict.py`. They import neither framework.
   - `Evaluator` is a structural `typing.Protocol`. No class on either side inherits from a class the other side uses.
   - Records cross as plain fields and results come back as plain values; no framework type crosses.
 

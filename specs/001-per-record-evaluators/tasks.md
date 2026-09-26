@@ -303,7 +303,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
 
 **Independent test**: T040 and T041 pass. The known-bad record produces the failing label (Article XI).
 
-- [ ] T040 [P] [US4] Write `tests/test_rubric_definition.py` for `evals/rubric.py`:
+- [X] T040 [P] [US4] Write `tests/test_rubric_definition.py` for `evals/rubric.py`:
   - names outside `^[a-z0-9_]+$` raise `ValueError`;
   - both or neither of `labels`/`score_range` raise, and so do duplicate labels and `min >= max`;
   - `id == "tna.judge.<name>"`;
@@ -311,7 +311,7 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
   - `template_version` changes when instructions, `requires`, labels or range change;
   - `render_prompt` includes only the `requires` fields and the reply-format instruction;
   - `verdict_model(r).model_validate_json` accepts `{"label":"pass","reason":"x"}`, and rejects an unknown label, a score outside the range, and `{}`.
-- [ ] T041 [P] [US4] Write `tests/test_per_record_rubric.py` (split `_a`/`_b` as needed), using `isolated_cache` and `cache_dir=store.CACHE_DIR`.
+- [X] T041 [P] [US4] Write `tests/test_per_record_rubric.py` (split `_a`/`_b` as needed), using `isolated_cache` and `cache_dir=store.CACHE_DIR`.
   - Seed entries by writing files at `make_key(f"deepeval:judge.{name}", judge_model(), hash_prompt(render_prompt(r, rec)))`.
   - A good record with a `"pass"` entry → `ok`, `label="pass"`, `score is None`.
   - **Negative:** a bad record with a `"fail"` entry → `ok`, `label="fail"`.
@@ -320,22 +320,33 @@ Expected: green, the cost table ends `$0.00` with a 100% cache hit rate, and myp
   - Same name, different instructions → different `judge_fingerprint`, and the second is not served the first's entry.
   - `list_evaluators(r)` ends with `r`'s info.
   - **Live:** `MockNim` returns non-JSON content twice → `invalid_output`, with `raw` = that content and no file written.
-- [ ] T042 [P] [US4] Create `evals/rubric.py`, which is framework-free (pydantic and stdlib only):
+- [X] T042 [P] [US4] Create `evals/rubric.py`, which is framework-free (pydantic and stdlib only):
   - a frozen `RubricJudge(name, instructions, requires, labels=None, score_range=None)`, validated in `__post_init__`;
   - properties `id`, `output_type` and `template_version` (`sha256(canonical_json(...))[:16]`);
   - `render_prompt(rubric, record) -> str`;
   - `verdict_model(rubric) -> type[BaseModel]`, via `pydantic.create_model`, with `Literal[labels]` or `Annotated[float, Field(ge=min, le=max)]` plus `reason: str`;
   - `verdict_schema(rubric) -> dict` for the fingerprint.
-- [ ] T043 [P] [US4] Add `build_rubric_judge(name, mode) -> CachedJudge` to a new `evals/judge/rubric_judge.py`, returning `CachedJudge(f"deepeval:judge.{name}", mode=mode)`. Export it from `evals/judge/__init__.py` (Article VI.a's one door).
-- [ ] T044 [US4] Create `evals/behavior/rubric_eval.py`, which is deepeval-side and imports only `evals.judge`, `evals.rubric` and the contract modules:
+- [X] T043 [P] [US4] Add `build_rubric_judge(name, mode) -> CachedJudge` to a new `evals/judge/rubric_judge.py`, returning `CachedJudge(f"deepeval:judge.{name}", mode=mode)`. Export it from `evals/judge/__init__.py` (Article VI.a's one door).
+- [X] T044 [US4] Create `evals/behavior/rubric_eval.py`, which is deepeval-side and imports only `evals.judge`, `evals.rubric` and the contract modules:
   - `evaluate_rubric(rubric, record, judge)` skips on a missing field;
   - `cfg = config_fingerprint(judge.judge_model, f"{rubric.id}@{rubric.template_version}", {"response_format": RESPONSE_FORMAT}, verdict_schema(rubric))`;
   - inside `session.begin(cfg, f"deepeval:judge.{rubric.name}")`: `text = build_rubric_judge(rubric.name, judge.mode).generate(prompt)`;
   - `json.JSONDecodeError` → `invalid` with `raw=exc.doc`;
   - `verdict_model(...).model_validate_json(text)` raising `ValidationError` → `invalid` with `raw=text`;
   - otherwise `ok(label=... or score=..., explanation=verdict.reason)`.
-- [ ] T045 [US4] In `trustnoagent/evaluators.py`: `evaluate()` accepts `RubricJudge` and routes it to `evaluate_rubric`; `list_evaluators(*rubrics)` appends each rubric's `EvaluatorInfo`, with `version = f"{__version__}+{deepeval LIB}"`. Export `RubricJudge` from `trustnoagent/__init__.py`.
-- [ ] T046 [US4] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+- [X] T045 [US4] In `trustnoagent/evaluators.py`: `evaluate()` accepts `RubricJudge` and routes it to `evaluate_rubric`; `list_evaluators(*rubrics)` appends each rubric's `EvaluatorInfo`, with `version = f"{__version__}+{deepeval LIB}"`. Export `RubricJudge` from `trustnoagent/__init__.py`.
+- [X] T046 [US4] Run GATE (pytest, ruff and mypy as configured in `pyproject.toml`).
+
+**Phase 6 as built (2026-09-26), where it differs from the task text:**
+- **`evals/rubric_verdict.py` is new** (60-line cap). It holds `render_prompt`, `verdict_model` and `verdict_schema`; `evals/rubric.py` holds only the `RubricJudge` definition. Both are framework-free and listed in `CONTRACT_MODULES` and Article II.c.
+- **`trustnoagent/runner.py` is new.** It runs one resolved scorer with the FR-004 safety net: `run()`, plus `failure()` moved from `results.py`, with the no-directory answer and latency/metadata stamping folded in. `evaluators.py` (52 lines) now only resolves an id or a rubric to a scorer. `runner.py` imports no layer, so it holds no Article II.c permission.
+- **`rubric_info()` lives in `evals/behavior/rubric_eval.py`,** next to the deepeval `LIB` it stamps into the version.
+- **Label matching is exact without `strict`.** Pydantic cannot apply `strict` to a `Literal`, and a `Literal` never coerces anyway (`"Pass"` is rejected). The score keeps `strict=True`, so `"3"` is not a score.
+- **`verdict_model` is cached** per rubric (`RubricJudge` is frozen and hashable).
+- **Tests split across six files** (60-line cap): `test_rubric_definition`, `test_rubric_verdict`, `test_per_record_rubric` (pass/fail path), `_replies` (score range, invalid replies), `_live` (through `MockNim`) and `_surface` (the `str | RubricJudge` widening, and all five string ids still scoring).
+- **What the known-bad negative proves.** Offline, the failing verdict is seeded evidence: the test proves the path carries a `fail` label through unchanged, as `ok` rather than an error, with its reason and tokens, and never coerced. Whether a real judge *reaches* `fail` on a bad record can only be shown live (T057's hand-run pass).
+- **`CachedJudge` keys still use the environment's `JUDGE_MODEL`,** not `JudgeConfig.judge_model`. The tests use env-derived configs, which is consistent. US5 (`judge_env`) closes this.
+- **Article XI check:** 9 mutations, 8 caught on the first run. The survivor (the rubric-id message) was only asserted as `status == "error"` in this phase's files; the test now checks the message, and the mutation is caught by two independent tests.
 
 ---
 

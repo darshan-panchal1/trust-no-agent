@@ -17,6 +17,7 @@ CONTRACT_MODULES = {
     "evals/fingerprint.py",
     "evals/outcomes.py",
     "evals/rubric.py",
+    "evals/rubric_verdict.py",
 }
 FRAMEWORKS = ("ragas", "deepeval")
 
