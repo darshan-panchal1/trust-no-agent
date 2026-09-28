@@ -10,8 +10,11 @@ import json
 
 import openai
 from openai.types.chat import ChatCompletion
+from openai.types.shared_params import ResponseFormatJSONObject
 
 _MAX_ATTEMPTS = 2
+# Named so the judging fingerprint records exactly what is sent (spec 001, research R9).
+RESPONSE_FORMAT: ResponseFormatJSONObject = {"type": "json_object"}
 
 
 def json_completion(client: openai.OpenAI, model: str, prompt: str) -> ChatCompletion:
@@ -19,7 +22,7 @@ def json_completion(client: openai.OpenAI, model: str, prompt: str) -> ChatCompl
         response = client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
+            response_format=RESPONSE_FORMAT,
         )
         try:
             json.loads(response.choices[0].message.content or "")
