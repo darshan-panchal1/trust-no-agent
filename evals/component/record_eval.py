@@ -54,6 +54,7 @@ def evaluate_ragas(
             if (text := unusable_reply(exc)) is None:
                 return failed(info, exc, judge.judge_model, fingerprint)
             message = f"the judge's reply could not be used ({type(exc).__name__})"
-            return outcomes.invalid(info, message, text, judge.judge_model, fingerprint)
+            served = dict(active.served)  # FR-033: a prior call in this metric may have written
+            return outcomes.invalid(info, message, text, judge.judge_model, fingerprint, served)
         return outcomes.ok(info, score=score, judge_model=judge.judge_model,
                            fingerprint=fingerprint, served=dict(active.served))

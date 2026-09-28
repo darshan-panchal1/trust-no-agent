@@ -43,6 +43,7 @@ def evaluate_refusal(info: EvaluatorInfo, record: EvalRecord, judge: JudgeConfig
             if (text := unusable_reply(exc, active.served)) is None:
                 return failed(info, exc, judge.judge_model, fingerprint)
             message = f"the judge's reply could not be used ({type(exc).__name__})"
-            return outcomes.invalid(info, message, text, judge.judge_model, fingerprint)
+            served = dict(active.served)  # FR-033: real usage, if this attempt still wrote one
+            return outcomes.invalid(info, message, text, judge.judge_model, fingerprint, served)
         return outcomes.ok(info, score=score, explanation=reason, judge_model=judge.judge_model,
                            fingerprint=fingerprint, served=dict(active.served))

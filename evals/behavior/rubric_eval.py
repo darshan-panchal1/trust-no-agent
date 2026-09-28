@@ -40,14 +40,16 @@ def evaluate_rubric(
             text = build_rubric_judge(rubric.name, judge.mode).generate(prompt)
         except json.JSONDecodeError as exc:  # json_completion gave up after its one retry
             reason = "the judge never replied with JSON"
-            return outcomes.invalid(info, reason, exc.doc, judge.judge_model, fingerprint)
+            served = dict(active.served)  # FR-033: real, if a retried attempt still wrote one
+            return outcomes.invalid(info, reason, exc.doc, judge.judge_model, fingerprint, served)
         except Exception as exc:  # noqa: BLE001 — judge and fingerprint are known: keep them
             return failed(info, exc, judge.judge_model, fingerprint)
         try:
             verdict = verdict_model(rubric).model_validate_json(text)
         except ValidationError as exc:
             reason = f"the judge's reply broke the rubric: {exc.errors()[0]['msg']}"
-            return outcomes.invalid(info, reason, text, judge.judge_model, fingerprint)
+            served = dict(active.served)  # FR-033: the reply that failed validation, if written
+            return outcomes.invalid(info, reason, text, judge.judge_model, fingerprint, served)
         return outcomes.ok(
             info, score=getattr(verdict, "score", None), label=getattr(verdict, "label", None),
             explanation=getattr(verdict, "reason", None), judge_model=judge.judge_model,

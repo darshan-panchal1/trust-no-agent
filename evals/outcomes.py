@@ -1,6 +1,5 @@
-"""`EvalResult` builders (data-model.md § EvalResult). Framework-free (Article II.c). The rules
-they hold for every caller: a failure never carries a score or label, NaN never reaches a
-result, and a 0/0 evidence entry makes tokens unknown rather than zero (spec FR-014, FR-034)."""
+"""`EvalResult` builders (data-model.md § EvalResult). A failure never carries a score or
+label, NaN never reaches a result, and a 0/0 or absent entry makes tokens unknown (FR-014/034)."""
 
 from __future__ import annotations
 
@@ -16,6 +15,12 @@ def _of(info: EvaluatorInfo, **fields: object) -> EvalResult:
     return EvalResult(evaluator_id=info.id, evaluator_version=info.version, **fields)  # type: ignore[arg-type]
 
 
+def _tokens(entries: list[CacheEntry]) -> tuple[int | None, int | None]:
+    known = bool(entries) and all(e.input_tokens or e.output_tokens for e in entries)
+    return (sum(e.input_tokens for e in entries), sum(e.output_tokens for e in entries)) \
+        if known else (None, None)
+
+
 def skipped(info: EvaluatorInfo, missing: RecordField) -> EvalResult:
     return _of(info, status="skipped", error=f"record has no {missing!r}, which {info.id} requires")
 
@@ -29,10 +34,13 @@ def error(
 
 
 def invalid(
-    info: EvaluatorInfo, message: str, raw_text: str, judge_model: str | None, fingerprint: str
+    info: EvaluatorInfo, message: str, raw_text: str, judge_model: str | None, fingerprint: str,
+    served: Mapping[str, CacheEntry] | None = None,  # FR-033: usage a completed call recorded
 ) -> EvalResult:
+    tokens_in, tokens_out = _tokens(list((served or {}).values()))
     return _of(info, status="invalid_output", error=message, judge_model=judge_model,
-               judge_fingerprint=fingerprint, raw={"responses": [raw_text]})
+               judge_fingerprint=fingerprint, raw={"responses": [raw_text]},
+               tokens_in=tokens_in, tokens_out=tokens_out)
 
 
 def ok(
@@ -44,13 +52,9 @@ def ok(
     if score is not None and math.isnan(score):
         return _of(info, status="invalid_output", error="judge output produced NaN",
                    judge_model=judge_model, judge_fingerprint=fingerprint, raw=raw)
-    entries = [served[k] for k in keys]
-    known = bool(entries) and all(e.input_tokens or e.output_tokens for e in entries)
-    recorded = all(e.fingerprint is not None for e in entries)
-    return _of(
-        info, status="ok", score=score, label=label, explanation=explanation,
-        judge_model=judge_model, judge_fingerprint=fingerprint, raw=raw,
-        fingerprint_provenance=("recorded" if recorded else "not_recorded") if entries else None,
-        tokens_in=sum(e.input_tokens for e in entries) if known else None,
-        tokens_out=sum(e.output_tokens for e in entries) if known else None,
-    )
+    tokens_in, tokens_out = _tokens(list(served.values()))
+    recorded = all(e.fingerprint is not None for e in served.values())
+    provenance = ("recorded" if recorded else "not_recorded") if served else None
+    return _of(info, status="ok", score=score, label=label, explanation=explanation,
+               judge_model=judge_model, judge_fingerprint=fingerprint, raw=raw,
+               fingerprint_provenance=provenance, tokens_in=tokens_in, tokens_out=tokens_out)
