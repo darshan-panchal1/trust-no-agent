@@ -21,8 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `NVIDIA_API_KEY` only in live mode. Every result carries a judge fingerprint (model,
   prompt-template version, decoding params, response schema) so a cached score can be told
   apart from one produced by a different judge configuration. A new `compat.yml` workflow
-  runs the offline suite against the evaluator contract on every push. None of this changes
-  1.0.0 behavior — `evals.cli` and the `trust-no-agent` console script work exactly as before.
+  runs on every pull request, comparing the v1.0.0 CLI's committed output against the same
+  commands run on HEAD, byte for byte (SC-003, FR-036): 1.1.0 is additive, and `evals.cli`
+  and the `trust-no-agent` console script work exactly as they did in 1.0.0.
 
 ### Changed
 
@@ -39,12 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `tokens=None` even for judge calls that were in fact billed; a live pass caught one such
   case that had actually recorded 157 input and 255 output tokens. These results now report
   the real usage figures from the call that produced them. Regression coverage:
-  `tests/test_per_record_ragas_tokens.py` and `tests/test_per_record_rubric_invalid_tokens.py`.
+  `tests/test_outcomes_invalid_tokens.py` and `tests/test_per_record_rubric_invalid_tokens.py`.
 
 ## [1.0.0] - 2026-09-12
 
-Initial release: `trustnoagent`, a facade over Ragas and DeepEval for gating one model's
-outputs against another's, packaged for PyPI with a `trust-no-agent` console script.
+Initial release: `trustnoagent`, a facade over Ragas and DeepEval for scoring two agent
+variants, `v1_naive` and `v2_fixed`, against the same corpus and the same underlying model,
+packaged for PyPI with a `trust-no-agent` console script.
 
 [1.1.0]: https://github.com/darshan-panchal1/trust-no-agent/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/darshan-panchal1/trust-no-agent/releases/tag/v1.0.0
