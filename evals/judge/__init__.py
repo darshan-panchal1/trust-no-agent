@@ -9,11 +9,13 @@ from __future__ import annotations
 from evals.judge.cached import CachedJudge
 from evals.judge.geval import build_geval_metric
 from evals.judge.probe import build_score_laundering_probe
+from evals.judge.rubric_judge import build_rubric_judge
 from evals.judge.tool_correctness import build_tool_correctness_metric
 
 __all__ = [
     "CachedJudge",
     "build_geval_metric",
+    "build_rubric_judge",
     "build_score_laundering_probe",
     "build_tool_correctness_metric",
 ]

@@ -1,0 +1,72 @@
+# Spec 001 (T059, SC-003, FR-036): v1.1.0 is additive, so every v1.0.0 CLI surface must stay
+# byte-identical. This runs the same commands against the v1.0.0 tag and this PR's head, on ONE
+# shared summary built by v1.0.0, and fails on any difference in stdout, exit codes, rendered
+# report files, or evals/thresholds.yaml after `calibrate`. Offline: it holds no credential of
+# any kind, and tests/test_ci_config.py asserts that for every workflow file.
+name: compat
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  cli-byte-identity:
+    name: v1.0.0 CLI output is byte-identical
+    runs-on: ubuntu-latest
+    # The committed pytest env block's values (Article III.a) — the CLI does not run under
+    # pytest, so they are set here, as action.yml sets them for `gate`.
+    env:
+      JUDGE_MODEL: nvidia/nemotron-3-super-120b-a12b
+      GENERATOR_MODEL: nvidia/nemotron-3-super-120b-a12b
+      DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
+      RAGAS_DO_NOT_TRACK: "true"
+      DEEPEVAL_DISABLE_DOTENV: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the v1.0.0 tag must be present locally
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Two worktrees, v1.0.0 and this PR, each on its own exact pins
+        run: |
+          git worktree add "$RUNNER_TEMP/base" v1.0.0
+          git worktree add "$RUNNER_TEMP/head" HEAD
+          for side in base head; do (cd "$RUNNER_TEMP/$side" && uv sync --frozen); done
+
+      - name: One summary, built by v1.0.0, fed to both sides
+        working-directory: ${{ runner.temp }}/base
+        run: >-
+          uv run --frozen python -c "import os; from pathlib import Path;
+          from trustnoagent import EvalSuite;
+          EvalSuite(os.environ['JUDGE_MODEL'], os.environ['GENERATOR_MODEL']).run().save(
+          Path(os.environ['RUNNER_TEMP']) / 'summary.json')"
+
+      - name: Run every v1.0.0 CLI command on both sides
+        # stdout and exit codes only. stderr carries warnings that embed each worktree's
+        # absolute path, so it would differ between sides for reasons that are not behaviour.
+        run: |
+          set +e  # a non-zero exit is data to compare, not a reason to stop
+          for side in base head; do
+            cd "$RUNNER_TEMP/$side"
+            out="$RUNNER_TEMP/$side.txt"
+            : > "$out"
+            record() { echo "\$ $*" >> "$out"; "$@" >> "$out" 2>> "$RUNNER_TEMP/$side.err"; echo "exit=$?" >> "$out"; }
+            record uv run --frozen python -m evals.cli record --dry-run
+            record uv run --frozen python -m evals.cli report "$RUNNER_TEMP/summary.json" --out-dir "$RUNNER_TEMP/$side-report"
+            record uv run --frozen python -m evals.cli compare "$RUNNER_TEMP/summary.json" "$RUNNER_TEMP/summary.json"
+            record uv run --frozen python -m evals.cli gate "$JUDGE_MODEL" "$GENERATOR_MODEL"
+            record uv run --frozen python -m evals.cli calibrate
+            record git diff --exit-code evals/thresholds.yaml
+            # `report` prints the paths it wrote; they differ only by the side's own name.
+            sed -i "s#$RUNNER_TEMP/$side-report#<report-dir>#g" "$out"
+          done
+
+      - name: The two sides must not differ at all
+        run: |
+          diff -u "$RUNNER_TEMP/base.txt" "$RUNNER_TEMP/head.txt"
+          diff -ru "$RUNNER_TEMP/base-report" "$RUNNER_TEMP/head-report"

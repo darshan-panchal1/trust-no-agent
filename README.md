@@ -246,6 +246,45 @@ Releases publish to PyPI through
 via OIDC trusted publishing — manually dispatched, and there is no PyPI token stored anywhere
 in this repository.
 
+## Per-record evaluation (v1.1.0)
+
+Score one record from your own agent with one evaluator, without importing Ragas or DeepEval.
+This is additive: `EvalSuite`, `RunSummary`, the CLI and the Action behave exactly as in v1.0.0.
+
+```python
+from pathlib import Path
+from trustnoagent import EvalRecord, JudgeConfig, RubricJudge, evaluate, list_evaluators
+
+record = EvalRecord(input="How many PTO days carry over?", output="Up to 5.",
+                    expected="Up to 5 unused days.", contexts=("Up to 5 unused PTO days ...",))
+result = evaluate("tna.ragas.faithfulness", record)   # offline: committed evidence only
+live = evaluate("tna.ragas.faithfulness", record,
+                JudgeConfig.from_env(mode="live"), cache_dir=Path(".eval-cache"))
+polite = RubricJudge("polite", "Is the answer polite?", frozenset({"output"}),
+                     labels=("pass", "fail"))
+verdict = evaluate(polite, record)                    # your own judge, same path
+```
+
+| id | requires | output |
+|---|---|---|
+| `tna.deepeval.refusal_correctness` | input, output, expected | score 0–1 |
+| `tna.ragas.context_precision` | input, contexts, expected | score 0–1 |
+| `tna.ragas.context_recall` | input, contexts, expected | score 0–1 |
+| `tna.ragas.faithfulness` | input, output, contexts | score 0–1 |
+| `tna.ragas.response_relevancy` | input, output | score 0–1 |
+
+- **Failures are results, never exceptions.** `status` is `ok`, `skipped` (a required field
+  is missing), `invalid_output` (the judge replied unusably; its text is kept in `raw`) or
+  `error`. A failed result never carries a score or label.
+- **Every result names how it was judged**: `judge_model` and `judge_fingerprint`. New
+  evidence stores its fingerprint beside the unchanged cache key; a disagreeing one is refused,
+  and v1.0.0-era evidence is served and marked `fingerprint_provenance="not_recorded"`.
+- **The `JudgeConfig` you pass governs the call**: its model keys the evidence, and live mode
+  uses its key. `cache_dir` is required outside a repo checkout.
+- The hand-run live check is `uv run python -c "from trustnoagent.live_check import main;
+  main()"`. It needs `NVIDIA_API_KEY`, and `uv sync --group calibration` for live relevancy.
+  Contract: [`specs/001-per-record-evaluators/contracts/public-api.md`](specs/001-per-record-evaluators/contracts/public-api.md).
+
 ## Contributing
 
 There is no `CONTRIBUTING.md`, and that is deliberate: the contribution rules are the
