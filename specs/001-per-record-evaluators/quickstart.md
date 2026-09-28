@@ -56,7 +56,7 @@ uv run pytest tests -k "per_record and statuses" -q
 
 ## 4. Rubric judge: pass, fail, and invalid output (US4, SC-006, Article XI)
 
-Selects every test file with `rubric` in its name (39 tests as of v1.1.0). Offline, the `fail` verdict is seeded evidence: it proves the path carries a failing label unchanged, not that a real judge reaches it (see §7).
+Selects every test whose node id contains `rubric` (40 tests as of v1.1.0). `-k` matches test names, not only file names, so this includes one test each from `test_per_record_fingerprint_tamper.py` and `test_per_record_statuses_input.py`. Offline, the `fail` verdict is seeded evidence: it proves the path carries a failing label unchanged, not that a real judge reaches it (see §7).
 
 ```bash
 uv run pytest tests -k "rubric" -q
@@ -72,7 +72,7 @@ uv run pytest tests -k "rubric" -q
 ```bash
 uv run pytest tests/test_per_record_fingerprint.py tests/test_per_record_fingerprint_tamper.py \
   tests/test_per_record_ragas_tokens.py tests/test_per_record_ragas_tokens_edges.py \
-  tests/test_per_record_rubric_live.py
+  tests/test_per_record_rubric_live.py tests/test_per_record_rubric_invalid_tokens.py
 ```
 
 These tests use an `httpx.MockTransport`-backed NIM client under `socket_disabled`, writing to a `tmp_path` cache. **Expected:**
@@ -80,12 +80,14 @@ These tests use an `httpx.MockTransport`-backed NIM client under `socket_disable
 - Second call: no HTTP request, and a result equal to the first in every field except `latency_ms`.
 - Editing the stored `fingerprint` makes the next call return `error` naming both values, on every built-in and the rubric path.
 - A retried judge attempt's tokens are billed to the entry it produced (Phase 9 correction to R5).
+- An `invalid_output` result still carries the real tokens its call already recorded (FR-033).
 
 ## 6. v1.0.0 behaviour is byte-identical (SC-003)
 
-- **In the suite:** step 1 already covers it, through `tests/test_v1_compat.py`. That module checks cache re-serialisation of all 1,120 entries, the `make_key` golden hash, the `RunSummary` schema snapshot, and that the offline summary is fully cached.
+- **In the suite:** step 1 already covers it, through two modules. `tests/test_v1_compat.py` checks cache re-serialisation of all 1,120 entries and the `make_key` golden hash; `tests/test_v1_compat_summary.py` checks the `RunSummary` schema snapshot and that the offline summary is fully cached.
 - **For the CLI:** the `compat` workflow runs on the pull request. It compares `v1.0.0` against HEAD for `record --dry-run`, `report`, `compare` and `gate`, including stdout and exit codes, and runs `calibrate` followed by `git diff --exit-code evals/thresholds.yaml`. **Expected:** zero diff.
-- **Locally**, the same comparison is the sequence of steps inside `.github/workflows/compat.yml`, run by hand in two `git worktree`s.
+- **Locally**, the same comparison is the sequence of steps inside `.github/workflows/compat.yml`, run by hand in two `git worktree`s under `bash`. On macOS, write the normalising step as `sed -i '' "s#…#…#g"`: BSD `sed` rejects the workflow's GNU-style `sed -i "…"`.
+- **Verified 2026-09-28:** zero diff locally (`v1.0.0` vs. `e34c712`), and green in CI on PR #2.
 
 ## 7. Live, by hand, once (never CI, never pytest)
 
@@ -97,6 +99,8 @@ NVIDIA_API_KEY=... uv run python -c "from trustnoagent.live_check import main; m
 **Expected:**
 - Each built-in and one sample rubric score a fresh record into a temporary `cache_dir`.
 - Each prints status, score or label, tokens and fingerprint.
+- A second run makes zero HTTP calls.
+- `evals/.judge_cache/` is untouched, which `git status` confirms.
 
 **Recorded run, 2026-09-26** (`nvidia/nemotron-3-super-120b-a12b`, 12m47s, 16 uncached calls; re-run: 0 uncached calls, identical results). One faithful and one known-bad (wrong, ungrounded, rude) answer:
 
@@ -109,5 +113,3 @@ NVIDIA_API_KEY=... uv run python -c "from trustnoagent.live_check import main; m
 | rubric `polite_and_grounded` | `pass` | `invalid_output`: the judge replied `{}` |
 
 The `{}` is `json_object` mode's documented weakness (valid JSON, no fields). The path reported it with the reply kept, not as a verdict. `nvext.guided_json` is the known fix (research R18).
-- A second run makes zero HTTP calls.
-- `evals/.judge_cache/` is untouched, which `git status` confirms.

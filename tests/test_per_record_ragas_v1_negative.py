@@ -22,3 +22,17 @@ def test_the_worst_v1_answer_misses_the_calibrated_bar(name: str) -> None:
     result = evaluate(f"tna.ragas.{name}", record)
     assert result.status == "ok", result.error
     assert result.score is not None and result.score < threshold_for(name)
+
+
+@pytest.mark.usefixtures("socket_disabled")
+@pytest.mark.parametrize(("name", "case"), [("context_precision", 16), ("response_relevancy", 0)])
+def test_a_v1_answer_scores_worse_than_v2_on_the_same_question(name: str, case: int) -> None:
+    """Neither metric is gated, so there is no calibrated bar (Article IV) to miss — the
+    negative signal is that v1 can score strictly worse than v2 on the identical question."""
+    golden = load_golden()[case]
+    v1_result = evaluate(f"tna.ragas.{name}", record_for(golden, answers()["v1_naive"][case]))
+    v2_result = evaluate(f"tna.ragas.{name}", record_for(golden, answers()["v2_fixed"][case]))
+    assert v1_result.status == "ok", v1_result.error
+    assert v2_result.status == "ok", v2_result.error
+    assert v1_result.score is not None and v2_result.score is not None
+    assert v1_result.score < v2_result.score

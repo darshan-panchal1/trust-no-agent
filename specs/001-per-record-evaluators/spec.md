@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-26
 
-**Status**: Clarified (2026-09-26), planned; see plan.md
+**Status**: Implemented (2026-09-28)
 
 **Target release**: v1.1.0 (additive; no existing surface changes)
 
